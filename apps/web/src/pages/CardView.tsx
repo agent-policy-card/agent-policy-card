@@ -1,6 +1,8 @@
 import { CARD_CONTRACT } from "@apc/policy-core";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { AuditVerifier } from "../components/AuditVerifier";
+import { Simulator } from "../components/Simulator";
 import { publicClient } from "../lib/chain";
 import { readCard, type CardData } from "../lib/readCard";
 
@@ -64,8 +66,16 @@ export function CardView() {
         </button>
       </p>
 
-      <section id="simulator"></section>
-      <section id="audit-verifier"></section>
+      <section id="simulator">
+        {state.kind === "ready" && state.card.status !== "NONE" && (
+          <Simulator policyText={state.card.policyText} paused={state.card.status === "PAUSED"} />
+        )}
+      </section>
+      <section id="audit-verifier">
+        {state.kind === "ready" && state.card.status !== "NONE" && (
+          <AuditVerifier root={state.card.attestation?.logMerkleRoot ?? null} />
+        )}
+      </section>
     </article>
   );
 }
