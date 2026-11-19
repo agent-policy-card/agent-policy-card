@@ -11,7 +11,7 @@ contract AgentPolicyCardTest is Test {
     event AgentPaused(address indexed owner, address indexed triggeredBy, uint64 timestamp);
     event AgentUnpaused(address indexed owner, uint64 timestamp);
     event AttestationSubmitted(
-        address indexed owner, uint32 indexed epoch, uint32 allowedCount, uint32 totalBlocked, bytes32 logMerkleRoot
+        address indexed owner, uint32 indexed epoch, uint32 allowedCount, uint64 totalBlocked, bytes32 logMerkleRoot
     );
 
     MockAgentID internal agentId;
@@ -162,7 +162,7 @@ contract AgentPolicyCardTest is Test {
     function test_pause_zeroGuardianDoesNotAuthorizeZeroCaller() public {
         vm.prank(holder);
         card.publishCard(POLICY, address(0));
-        vm.prank(stranger);
+        vm.prank(address(0));
         vm.expectRevert(AgentPolicyCard.NotAuthorizedToPause.selector);
         card.pause(holder);
     }
@@ -253,20 +253,22 @@ contract AgentPolicyCardTest is Test {
 
     function _attest(uint64 start, uint64 end) internal {
         vm.prank(holder);
-        card.submitAttestation(3, 1, 1, 0, 0, bytes32(uint256(7)), start, end);
+        card.submitAttestation(3, 1, 2, 4, 8, bytes32(uint256(7)), start, end);
     }
 
     function test_attest_happyPath() public {
         _publish();
         uint64 t = uint64(block.timestamp);
         vm.expectEmit(true, true, false, true, address(card));
-        emit AttestationSubmitted(holder, 1, 3, 2, bytes32(uint256(7)));
+        emit AttestationSubmitted(holder, 1, 3, 15, bytes32(uint256(7)));
         _attest(t - 100, t - 10);
         AgentPolicyCard.Attestation memory a = card.getLatestAttestation(holder);
         assertEq(a.epoch, 1);
         assertEq(a.allowedCount, 3);
         assertEq(a.blockedEip712, 1);
-        assertEq(a.blockedApprove, 1);
+        assertEq(a.blockedApprove, 2);
+        assertEq(a.blockedSelector, 4);
+        assertEq(a.blockedOther, 8);
         assertEq(a.logMerkleRoot, bytes32(uint256(7)));
         assertEq(a.periodStart, t - 100);
         assertEq(a.periodEnd, t - 10);
@@ -331,6 +333,55 @@ contract AgentPolicyCardTest is Test {
         uint64 t = uint64(block.timestamp);
         _attest(t - 100, t - 10);
         assertEq(card.getLatestAttestation(holder).epoch, 1);
+    }
+
+    function test_attest_rejectsStartAfterEnd() public {
+        _publish();
+        uint64 t = uint64(block.timestamp);
+        vm.expectRevert(AgentPolicyCard.InvalidAttestationPeriod.selector);
+        _attest(t - 5, t - 10);
+    }
+
+    function test_attest_largeCountsDoNotOverflow() public {
+        _publish();
+        uint64 t = uint64(block.timestamp);
+        uint32 m = type(uint32).max;
+        vm.expectEmit(true, true, false, true, address(card));
+        emit AttestationSubmitted(holder, 1, 0, uint64(m) * 4, bytes32(0));
+        vm.prank(holder);
+        card.submitAttestation(0, m, m, m, m, bytes32(0), t - 10, t);
+    }
+
+    function test_guardianRotation_recoversFromHostileGuardian() public {
+        _publish();
+        vm.prank(guardian);
+        card.pause(holder);
+        address g2 = makeAddr("g2");
+        vm.warp(block.timestamp + 100);
+        vm.prank(holder);
+        card.setGuardian(g2);
+        assertEq(card.getCard(holder).updatedAt, block.timestamp);
+        vm.prank(holder);
+        card.unpause();
+        vm.prank(guardian);
+        vm.expectRevert(AgentPolicyCard.NotAuthorizedToPause.selector);
+        card.pause(holder);
+        vm.prank(g2);
+        card.pause(holder);
+        assertTrue(card.isPaused(holder));
+        vm.prank(holder);
+        card.unpause();
+        vm.prank(holder);
+        card.pause(holder);
+        assertTrue(card.isPaused(holder));
+    }
+
+    function test_publish_updateRefreshesUpdatedAt() public {
+        _publish();
+        vm.warp(block.timestamp + 500);
+        vm.prank(holder);
+        card.publishCard('{"v":1,"z":1}', guardian);
+        assertEq(card.getCard(holder).updatedAt, block.timestamp);
     }
 
     // ---------- views ----------

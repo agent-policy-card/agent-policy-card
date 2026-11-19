@@ -41,7 +41,7 @@ contract AgentPolicyCard {
     event AgentPaused(address indexed owner, address indexed triggeredBy, uint64 timestamp);
     event AgentUnpaused(address indexed owner, uint64 timestamp);
     event AttestationSubmitted(
-        address indexed owner, uint32 indexed epoch, uint32 allowedCount, uint32 totalBlocked, bytes32 logMerkleRoot
+        address indexed owner, uint32 indexed epoch, uint32 allowedCount, uint64 totalBlocked, bytes32 logMerkleRoot
     );
 
     error NotAgentIdHolder();
@@ -134,7 +134,7 @@ contract AgentPolicyCard {
         a.periodStart = periodStart;
         a.periodEnd = periodEnd;
         a.submittedAt = uint64(block.timestamp);
-        uint32 totalBlocked = blockedEip712 + blockedApprove + blockedSelector + blockedOther;
+        uint64 totalBlocked = uint64(blockedEip712) + blockedApprove + blockedSelector + blockedOther;
         emit AttestationSubmitted(msg.sender, a.epoch, allowedCount, totalBlocked, logMerkleRoot);
     }
 
