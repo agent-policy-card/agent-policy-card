@@ -3,5 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "src/index.ts"
+  "main": "src/index.ts",
+  "dependencies": {
+    "@apc/policy-core": "^0.1.0",
+    "viem": "^2.58.1"
+  }
 }
