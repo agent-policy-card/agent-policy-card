@@ -26,7 +26,7 @@ The owner of this wallet published a policy card on BNB Chain: a public list of 
 | NO_CARD | No policy card is published for this wallet yet. |
 | AGENT_PAUSED | The owner or their guardian paused this agent. Only the owner can unpause. |
 | POLICY_UNREADABLE | The published policy cannot be read. |
-| UNKNOWN_COMMAND, BLOCKED_COMMAND | This command is not allowed by the policy. |
+| UNKNOWN_COMMAND, BLOCKED_COMMAND | This command is not allowed by the policy. x402 payments are always blocked in this version. |
 | BLOCKED_EIP712 | Signing this typed message is not allowed (for example a token Permit). |
 | BLOCKED_APPROVE | The action grants token allowance or authority (approve, setApprovalForAll, Permit). |
 | BLOCKED_BINANCE_RISK | The wallet's own preview flagged this as risky. |

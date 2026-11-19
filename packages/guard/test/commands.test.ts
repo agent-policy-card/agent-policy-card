@@ -34,3 +34,15 @@ describe("classify", () => {
     expect(classify(["contract-call", "preview", "--to=0x1"]).cls).toBe("unknown");
   });
 });
+
+describe("flags and commands seen in the real CLI help (2026-11-19)", () => {
+  it("--max is a boolean flag", () => {
+    const c = classify(["wallet", "send", "--max", "--recipient", "0x1", "--binanceChainId", "56"]);
+    expect(c.cls).toBe("write-1step");
+    expect(c.args).toMatchObject({ max: "true", recipient: "0x1", binanceChainId: "56" });
+  });
+
+  it("knows the extra read commands", () => {
+    for (const c of [["wallet", "left-quota"], ["skill-check"], ["cli-check"]]) expect(classify(c).cls).toBe("read");
+  });
+});

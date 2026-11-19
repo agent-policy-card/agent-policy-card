@@ -32,6 +32,7 @@ What the default rules block:
 - native value above the card's limit, denied selectors, targets outside an allowlist when one is set
 - one-step write commands not listed on the card, and every unknown command
 - any chain other than BNB Smart Chain (56)
+- x402 payments: `x402-payment sign` signs an option chosen by id, so the guard cannot see what is signed; v1 always blocks it
 
 Changes to the card itself (unpause, new guardian, new rules) need the owner to retype a random code with `apc-confirm` in a real terminal.
 
@@ -52,6 +53,13 @@ No owner, no admin, no proxy, not payable, never holds or moves tokens. Each car
 npm ci
 npm run build -w @apc/guard
 packages/guard/scripts/install.sh "$(command -v baw)" <your-agent-wallet-address> <card-contract-address>
+```
+
+The first argument is the wallet CLI the guard runs. If your setup reaches the wallet through a per-wallet wrapper script, pass that wrapper instead of `baw`.
+
+```bash
+# then put the guard first on the agent's PATH
+export PATH="$HOME/.agent-policy-card/bin:$PATH"
 ```
 
 The installer writes `~/.agent-policy-card/config.json`, copies `apc-baw`, `apc-confirm` and `apc-attest` to `~/.agent-policy-card/bin`, and links `baw` there so that directory placed first on the agent's `PATH` puts the guard in front of the real CLI. For Claude Code, register `packages/guard/dist/apc-hook.mjs` as a `PreToolUse` hook on `Bash`, and give the agent `packages/guard/SKILL.md`.

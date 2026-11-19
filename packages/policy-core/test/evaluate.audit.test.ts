@@ -61,14 +61,7 @@ describe("audit fixes in evaluate", () => {
     expect(run(toIntent("sign-message preview", signArgs(mail), signPreview({ messageType: "Other" })), chainWith(p)).reasonCode).toBe("MALFORMED_PREVIEW");
   });
 
-  it("x402 typed data that grants authority is blocked even without a preview", () => {
-    const p = withPolicy((x) => {
-      x.rules.eip712 = { allow: [], deny: [], mode: "denylist" };
-      x.rules.oneStep.allow = ["x402-payment sign"];
-    });
-    const order = typedData({ name: "Pay", chainId: 56, verifyingContract: TOKEN, primaryType: "Order", message: { spender: SPENDER, amount: "5" } });
-    expect(run(toIntent("x402-payment sign", signArgs(order), null), chainWith(p)).reasonCode).toBe("BLOCKED_APPROVE");
-  });
+
 
   it("card calls must have value 0 and decodable calldata", () => {
     const i = toIntent("contract-call preview", contractArgs(CARD, calldata.pause(), "1"), contractPreview());

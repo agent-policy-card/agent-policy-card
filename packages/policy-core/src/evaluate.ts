@@ -180,12 +180,8 @@ function grantsAuthority(parsed: Record<string, unknown>): boolean {
 }
 
 function evaluateTypedData(intent: Extract<Intent, { kind: "typedData" }>, policy: PolicyV1): Decision {
-  if (intent.command === "x402-payment sign" && !policy.rules.oneStep.allow.includes(intent.command)) {
-    return block("BLOCKED_COMMAND");
-  }
   const sign = intent.preview === null ? null : readSignPreview(intent.preview);
-  if (intent.preview !== null && sign === null) return block("MALFORMED_PREVIEW");
-  if (intent.command === "sign-message preview" && sign === null) return block("MALFORMED_PREVIEW");
+  if (sign === null) return block("MALFORMED_PREVIEW");
 
   const td = intent.typedData;
   if (domainChainId(td) !== SUPPORTED_CHAIN_ID) return block("BLOCKED_EIP712");
@@ -249,9 +245,10 @@ export function evaluate(intent: Intent, chain: ChainState, cardContract: string
     // Step 1: chain.
     if (intent.kind === "contractCall" && intent.chainId !== SUPPORTED_CHAIN_ID) return block("UNSUPPORTED_CHAIN");
     if (intent.kind === "typedData") {
-      const c = intent.command === "sign-message preview" ? intent.chainId : (intent.chainId ?? domainChainId(intent.typedData));
-      if (c !== SUPPORTED_CHAIN_ID) return block("UNSUPPORTED_CHAIN");
+      if (intent.chainId !== SUPPORTED_CHAIN_ID) return block("UNSUPPORTED_CHAIN");
     }
+    // x402 payments sign an option chosen by id; the guard cannot see what is signed, so v1 never allows them.
+    if (intent.kind === "oneStep" && intent.command === "x402-payment sign") return block("BLOCKED_COMMAND");
     if (intent.kind === "oneStep" && intent.chainId !== SUPPORTED_CHAIN_ID) return block("UNSUPPORTED_CHAIN");
 
     // Steps 2 to 4: card state and policy.

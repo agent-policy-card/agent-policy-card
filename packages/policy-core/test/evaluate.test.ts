@@ -181,14 +181,15 @@ describe("step 6: EIP-712", () => {
     expect(d.reasonCode).toBe("BLOCKED_APPROVE");
   });
 
-  it("x402 needs oneStep.allow and the EIP-712 rule", () => {
-    const args = signArgs(PERMIT_TD);
-    expect(run(toIntent("x402-payment sign", args, null)).reasonCode).toBe("BLOCKED_COMMAND");
+  it("x402 payments are not supported in v1: always blocked, even when listed in oneStep.allow", () => {
+    const args = { paymentId: "550e8400-e29b-41d4-a716-446655440000", selectedIndex: "1" };
+    expect(toIntent("x402-payment sign", args, null).kind).toBe("oneStep");
     const p = withPolicy((x) => {
       x.rules.oneStep.allow = ["x402-payment sign"];
     });
-    expect(run(toIntent("x402-payment sign", args, null), chainWith(p)).reasonCode).toBe("BLOCKED_EIP712");
+    expect(run(toIntent("x402-payment sign", args, null), chainWith(p)).reasonCode).toBe("BLOCKED_COMMAND");
   });
+
 
   it("blocks an unparseable --message", () => {
     const i = toIntent("sign-message preview", { binanceChainId: "56", signType: "EIP712", message: "not json" }, signPreview());

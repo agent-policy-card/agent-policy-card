@@ -6,7 +6,7 @@ export type TypedDataInfo = { signer: string; domain: Record<string, unknown>; p
 
 export type Intent =
   | { kind: "contractCall"; chainId: number; from: string; to: string; valueWei: bigint; inputData: string; preview: unknown }
-  | { kind: "typedData"; command: "sign-message preview" | "x402-payment sign"; chainId: number | null; signer: string; typedData: TypedDataInfo; preview: unknown | null }
+  | { kind: "typedData"; command: "sign-message preview"; chainId: number | null; signer: string; typedData: TypedDataInfo; preview: unknown | null }
   | { kind: "oneStep"; command: string; chainId: number | null; args: Record<string, string> }
   | { kind: "unknown"; command: string }
   | { kind: "malformed"; command: string; reason: string };
@@ -66,8 +66,8 @@ export function toIntent(command: string, args: Record<string, string>, previewJ
         preview: previewJson,
       };
     }
-    if (command === "sign-message preview" || command === "x402-payment sign") {
-      if (command === "sign-message preview" && args.signType !== "EIP712") return { kind: "malformed", command, reason: "signType must be EIP712" };
+    if (command === "sign-message preview") {
+      if (args.signType !== "EIP712") return { kind: "malformed", command, reason: "signType must be EIP712" };
       const typedData = parseTypedDataMessage(args.message);
       if (typedData === null) return { kind: "malformed", command, reason: "unreadable typed data" };
       return { kind: "typedData", command, chainId: parseChainId(args.binanceChainId), signer: typedData.signer, typedData, preview: previewJson };

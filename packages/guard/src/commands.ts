@@ -19,7 +19,7 @@ const READ = [
   "prediction trade quote", "prediction trade cancel",
   "sign-message history", "sign-message result",
   "wallet address", "wallet agent-id", "wallet balance", "wallet chains", "wallet gas-price", "wallet resolve-domain",
-  "wallet settings", "wallet status", "wallet tx-history", "wallet cancel", "wallet speed-up",
+  "wallet settings", "wallet status", "wallet tx-history", "wallet cancel", "wallet left-quota", "skill-check", "cli-check", "wallet speed-up",
   "x402-payment preview",
 ];
 
@@ -31,7 +31,7 @@ const FLAGS: Record<string, string[]> = {
   "contract-call execute": ["requestId", "json"],
   "sign-message execute": ["requestId", "json"],
 };
-const BOOLEAN_FLAGS = new Set(["json"]);
+const BOOLEAN_FLAGS = new Set(["json", "max"]);
 const FLAG_NAME = /^[a-z][A-Za-z0-9]*$/;
 
 function classOf(command: string): CommandClass {
