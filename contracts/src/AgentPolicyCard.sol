@@ -84,16 +84,58 @@ contract AgentPolicyCard {
         emit GuardianUpdated(msg.sender, newGuardian);
     }
 
-    function pause(address) external pure {
-        revert();
+    /// @notice Pause an agent. Callable by the card owner or its guardian. Not gated on
+    /// Agent ID: pausing is defensive and must keep working.
+    function pause(address owner) external {
+        PolicyCard storage c = cards[owner];
+        if (c.version == 0) revert CardNotFound();
+        if (msg.sender != owner && (c.guardian == address(0) || msg.sender != c.guardian)) {
+            revert NotAuthorizedToPause();
+        }
+        if (c.paused) revert AlreadyPaused();
+        c.paused = true;
+        c.pausedAt = uint64(block.timestamp);
+        emit AgentPaused(owner, msg.sender, uint64(block.timestamp));
     }
 
-    function unpause() external pure {
-        revert();
+    /// @notice Unpause the caller's own card. Guardians cannot unpause.
+    function unpause() external onlyHolder {
+        PolicyCard storage c = cards[msg.sender];
+        if (c.version == 0) revert CardNotFound();
+        if (!c.paused) revert NotPaused();
+        c.paused = false;
+        emit AgentUnpaused(msg.sender, uint64(block.timestamp));
     }
 
-    function submitAttestation(uint32, uint32, uint32, uint32, uint32, bytes32, uint64, uint64) external pure {
-        revert();
+    /// @notice Anchor a period summary and the Merkle root of the local audit log.
+    /// Periods are Unix seconds, never in the future, and never overlap the previous one.
+    function submitAttestation(
+        uint32 allowedCount,
+        uint32 blockedEip712,
+        uint32 blockedApprove,
+        uint32 blockedSelector,
+        uint32 blockedOther,
+        bytes32 logMerkleRoot,
+        uint64 periodStart,
+        uint64 periodEnd
+    ) external onlyHolder {
+        if (cards[msg.sender].version == 0) revert CardNotFound();
+        Attestation storage a = latest[msg.sender];
+        if (periodStart >= periodEnd || periodEnd > block.timestamp || periodStart < a.periodEnd) {
+            revert InvalidAttestationPeriod();
+        }
+        a.epoch += 1;
+        a.allowedCount = allowedCount;
+        a.blockedEip712 = blockedEip712;
+        a.blockedApprove = blockedApprove;
+        a.blockedSelector = blockedSelector;
+        a.blockedOther = blockedOther;
+        a.logMerkleRoot = logMerkleRoot;
+        a.periodStart = periodStart;
+        a.periodEnd = periodEnd;
+        a.submittedAt = uint64(block.timestamp);
+        uint32 totalBlocked = blockedEip712 + blockedApprove + blockedSelector + blockedOther;
+        emit AttestationSubmitted(msg.sender, a.epoch, allowedCount, totalBlocked, logMerkleRoot);
     }
 
     function getCard(address owner) external view returns (PolicyCard memory) {
