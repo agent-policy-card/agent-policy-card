@@ -2,3 +2,4 @@ export * from "./types.js";
 export * from "./schema.js";
 export * from "./presets.js";
 export * from "./describe.js";
+export * from "./merkle.js";
