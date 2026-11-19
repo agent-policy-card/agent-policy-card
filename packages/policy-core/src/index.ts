@@ -3,3 +3,6 @@ export * from "./schema.js";
 export * from "./presets.js";
 export * from "./describe.js";
 export * from "./merkle.js";
+export * from "./selectors.js";
+export * from "./intent.js";
+export * from "./evaluate.js";
