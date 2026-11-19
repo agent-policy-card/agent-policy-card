@@ -40,6 +40,7 @@ Changes to the card itself (unpause, new guardian, new rules) need the owner to 
 - `contracts/src/AgentPolicyCard.sol`, Solidity 0.8.24, Foundry.
 - Agent ID contract: `0x60b9262456de011f7d15a54cdd8c48baaa8b022f` (BSC mainnet), set as an immutable at deployment.
 - Card contract address and BscScan link: added after deployment.
+- Gas: publishing the default preset (362 bytes of policy text) for the first time costs about 361k gas, measured with `forge test --match-contract GasTest -vv`. The full text is stored on chain so the guard and the site read it without any other service.
 
 ### Owner permissions: none
 
