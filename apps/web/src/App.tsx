@@ -1,4 +1,6 @@
 import { HashRouter, Link, Route, Routes } from "react-router-dom";
+import { CardView } from "./pages/CardView.js";
+import { Composer } from "./pages/Composer.js";
 
 function Placeholder({ name }: { name: string }) {
   return <p>{name} is coming soon.</p>;
@@ -16,8 +18,8 @@ export function App() {
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<Placeholder name="Composer" />} />
-          <Route path="/card/:address" element={<Placeholder name="Card view" />} />
+          <Route path="/" element={<Composer />} />
+          <Route path="/card/:address" element={<CardView />} />
           <Route path="/guardian" element={<Placeholder name="Guardian" />} />
         </Routes>
       </main>
