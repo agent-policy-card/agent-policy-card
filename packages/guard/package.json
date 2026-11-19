@@ -12,9 +12,10 @@
     "apc-baw": "dist/apc-baw.mjs",
     "apc-guard": "dist/apc-baw.mjs",
     "apc-confirm": "dist/apc-confirm.mjs",
-    "apc-hook": "dist/apc-hook.mjs"
+    "apc-hook": "dist/apc-hook.mjs",
+    "apc-attest": "dist/apc-attest.mjs"
   },
   "scripts": {
-    "build": "esbuild bin/apc-baw.ts bin/apc-confirm.ts bin/apc-hook.ts --bundle --platform=node --format=esm --target=node20 --outdir=dist --out-extension:.js=.mjs --banner:js=\"#!/usr/bin/env node\""
+    "build": "esbuild bin/apc-baw.ts bin/apc-confirm.ts bin/apc-hook.ts bin/apc-attest.ts --bundle --platform=node --format=esm --target=node20 --outdir=dist --out-extension:.js=.mjs --banner:js=\"#!/usr/bin/env node\""
   }
 }

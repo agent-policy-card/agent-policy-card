@@ -40,7 +40,8 @@ chmod 600 "$DIR/config.json"
 
 cp "$HERE/dist/apc-baw.mjs" "$DIR/bin/apc-baw"
 cp "$HERE/dist/apc-confirm.mjs" "$DIR/bin/apc-confirm"
-chmod 755 "$DIR/bin/apc-baw" "$DIR/bin/apc-confirm"
+cp "$HERE/dist/apc-attest.mjs" "$DIR/bin/apc-attest"
+chmod 755 "$DIR/bin/apc-baw" "$DIR/bin/apc-confirm" "$DIR/bin/apc-attest"
 ln -sf "$DIR/bin/apc-baw" "$DIR/bin/apc-guard"
 ln -sf "$DIR/bin/apc-baw" "$DIR/bin/baw"
 
