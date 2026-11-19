@@ -14,6 +14,7 @@ export type StateEntry = {
   expiresAt: number;
   intentHash: string;
   summary?: string;
+  command?: "contract-call" | "sign-message";
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -26,7 +27,7 @@ function loadKey(cfg: Config, create: boolean): string | null {
   const p = join(cfg.dataDir, "state.key");
   if (existsSync(p)) {
     const k = readFileSync(p, "utf8").trim();
-    return k.length > 0 ? k : null;
+    if (k.length > 0) return k;
   }
   if (!create) return null;
   ensureDir(cfg);

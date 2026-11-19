@@ -23,6 +23,17 @@ const READ = [
   "x402-payment preview",
 ];
 
+// Flags each guarded preview/execute command may carry, from the official reference.
+// Any other flag makes the command unknown, so the guard and the wallet never parse different input.
+const FLAGS: Record<string, string[]> = {
+  "contract-call preview": ["binanceChainId", "from", "to", "value", "inputData", "gasLimit", "json"],
+  "sign-message preview": ["binanceChainId", "message", "signType", "json"],
+  "contract-call execute": ["requestId", "json"],
+  "sign-message execute": ["requestId", "json"],
+};
+const BOOLEAN_FLAGS = new Set(["json"]);
+const FLAG_NAME = /^[a-z][A-Za-z0-9]*$/;
+
 function classOf(command: string): CommandClass {
   if (PREVIEW.includes(command)) return "preview";
   if (EXECUTE.includes(command)) return "execute";
@@ -37,19 +48,21 @@ export function classify(argv: string[]): Classified {
   while (i < argv.length && !argv[i]!.startsWith("--")) words.push(argv[i++]!);
   const command = words.join(" ");
   const args: Record<string, string> = {};
-  let repeated = false;
-  let stray = false;
+  const seen = new Set<string>();
+  let bad = false;
+  const allowed = FLAGS[command];
   while (i < argv.length) {
     const tok = argv[i]!;
     if (!tok.startsWith("--") || tok.includes("=")) {
-      stray = true;
+      bad = true;
       i++;
       continue;
     }
     const key = tok.slice(2);
-    if (key in args) repeated = true;
+    if (!FLAG_NAME.test(key) || seen.has(key.toLowerCase()) || (allowed !== undefined && !allowed.includes(key))) bad = true;
+    seen.add(key.toLowerCase());
     const next = argv[i + 1];
-    if (next !== undefined && !next.startsWith("--")) {
+    if (!BOOLEAN_FLAGS.has(key) && next !== undefined && !next.startsWith("-")) {
       args[key] = next;
       i += 2;
     } else {
@@ -57,6 +70,6 @@ export function classify(argv: string[]): Classified {
       i++;
     }
   }
-  const cls = repeated || stray ? "unknown" : classOf(command);
+  const cls = bad ? "unknown" : classOf(command);
   return { cls, command, args };
 }

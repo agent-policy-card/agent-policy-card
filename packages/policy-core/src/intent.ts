@@ -2,11 +2,11 @@
 // Never throws: anything that cannot be read becomes a "malformed" intent.
 import { ONE_STEP_COMMANDS } from "./selectors.js";
 
-export type TypedDataInfo = { domain: Record<string, unknown>; primaryType: string; message: unknown };
+export type TypedDataInfo = { signer: string; domain: Record<string, unknown>; primaryType: string; message: unknown };
 
 export type Intent =
   | { kind: "contractCall"; chainId: number; from: string; to: string; valueWei: bigint; inputData: string; preview: unknown }
-  | { kind: "typedData"; command: "sign-message preview" | "x402-payment sign"; chainId: number | null; typedData: TypedDataInfo; preview: unknown | null }
+  | { kind: "typedData"; command: "sign-message preview" | "x402-payment sign"; chainId: number | null; signer: string; typedData: TypedDataInfo; preview: unknown | null }
   | { kind: "oneStep"; command: string; chainId: number | null; args: Record<string, string> }
   | { kind: "unknown"; command: string }
   | { kind: "malformed"; command: string; reason: string };
@@ -36,10 +36,12 @@ export function parseTypedDataMessage(raw: string | undefined): TypedDataInfo | 
   try {
     const req: unknown = JSON.parse(raw);
     if (!isObject(req) || req.method !== "eth_signTypedData_v4" || !Array.isArray(req.params)) return null;
+    const signer: unknown = req.params[0];
+    if (typeof signer !== "string" || !ADDRESS.test(signer)) return null;
     const second: unknown = req.params[1];
     const td: unknown = typeof second === "string" ? JSON.parse(second) : second;
     if (!isObject(td) || !isObject(td.domain) || typeof td.primaryType !== "string") return null;
-    return { domain: td.domain, primaryType: td.primaryType, message: td.message };
+    return { signer: signer.toLowerCase(), domain: td.domain, primaryType: td.primaryType, message: td.message };
   } catch {
     return null;
   }
@@ -65,9 +67,10 @@ export function toIntent(command: string, args: Record<string, string>, previewJ
       };
     }
     if (command === "sign-message preview" || command === "x402-payment sign") {
+      if (command === "sign-message preview" && args.signType !== "EIP712") return { kind: "malformed", command, reason: "signType must be EIP712" };
       const typedData = parseTypedDataMessage(args.message);
       if (typedData === null) return { kind: "malformed", command, reason: "unreadable typed data" };
-      return { kind: "typedData", command, chainId: parseChainId(args.binanceChainId), typedData, preview: previewJson };
+      return { kind: "typedData", command, chainId: parseChainId(args.binanceChainId), signer: typedData.signer, typedData, preview: previewJson };
     }
     if (ONE_STEP_COMMANDS.includes(command)) {
       return { kind: "oneStep", command, chainId: parseChainId(args.binanceChainId), args };

@@ -27,7 +27,7 @@ function contractPreview(requestId: string, expiresAt = NOW + 60_000): string {
     data: {
       requestId,
       parsedTx: {},
-      simulationResult: { balanceChanges: [], allowanceChanges: [], authorityChanges: [] },
+      simulationResult: { simulationCode: "000000000", balanceChanges: [], allowanceChanges: [], authorityChanges: [] },
       risks: { riskDetails: [], addresses: {}, riskBehaviors: [] },
       requireConfirmation: false,
       expiresAt,
@@ -191,12 +191,12 @@ describe("runShim other classes", () => {
   it("evaluates one-step writes before running them", async () => {
     const c = cfg();
     const w: World = { chain: active(), paused: false, calls: [] };
-    const allowed = await runShim(["wallet", "send", "--amount", "1", "--json"], deps(c, w, () => ok('{"ok":1}')));
+    const allowed = await runShim(["wallet", "send", "--binanceChainId", "56", "--amount", "1", "--json"], deps(c, w, () => ok('{"ok":1}')));
     expect(allowed.code).toBe(0);
-    const blocked = await runShim(["defi", "deposit", "--json"], deps(c, w, () => ok("{}")));
+    const blocked = await runShim(["defi", "deposit", "--binanceChainId", "56", "--json"], deps(c, w, () => ok("{}")));
     expect(blocked.code).toBe(3);
     w.chain = active(true);
-    expect((await runShim(["wallet", "send", "--amount", "1"], deps(c, w, () => ok("{}")))).code).toBe(3);
+    expect((await runShim(["wallet", "send", "--binanceChainId", "56", "--amount", "1"], deps(c, w, () => ok("{}")))).code).toBe(3);
     expect(w.calls).toHaveLength(1);
   });
 

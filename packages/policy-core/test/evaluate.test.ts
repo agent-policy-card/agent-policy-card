@@ -118,12 +118,12 @@ describe("step 5: command table", () => {
   });
 
   it("blocks one-step commands not in oneStep.allow", () => {
-    expect(run(toIntent("defi deposit", {}, null)).reasonCode).toBe("BLOCKED_COMMAND");
-    expect(run(toIntent("wallet send", {}, null), chainWith(PRESETS["zero-spend"])).reasonCode).toBe("BLOCKED_COMMAND");
+    expect(run(toIntent("defi deposit", { binanceChainId: "56" }, null)).reasonCode).toBe("BLOCKED_COMMAND");
+    expect(run(toIntent("wallet send", { binanceChainId: "56" }, null), chainWith(PRESETS["zero-spend"])).reasonCode).toBe("BLOCKED_COMMAND");
   });
 
   it("allows one-step commands in oneStep.allow", () => {
-    expect(run(toIntent("wallet send", { amount: "1" }, null))).toMatchObject({ verdict: "ALLOW_FOR_PREVIEW", bucket: "allowed" });
+    expect(run(toIntent("wallet send", { amount: "1", binanceChainId: "56" }, null))).toMatchObject({ verdict: "ALLOW_FOR_PREVIEW", bucket: "allowed" });
   });
 
   it("hard rule: unknownCommand is never read from the policy", () => {

@@ -60,15 +60,25 @@ export async function runShim(argv: string[], deps: ShimDeps): Promise<SpawnResu
     auditBlock("UNKNOWN_COMMAND");
     return blocked("UNKNOWN_COMMAND");
   }
-  if (args.from !== undefined && args.from.toLowerCase() !== cfg.wallet.toLowerCase()) {
+  const wallet = cfg.wallet.toLowerCase();
+  const fromMissing = command === "contract-call preview" && args.from === undefined;
+  if (fromMissing || (args.from !== undefined && args.from.toLowerCase() !== wallet)) {
     auditBlock("BLOCKED_OTHER");
-    return blocked("BLOCKED_OTHER", "agent-policy-card: --from is not the guarded wallet");
+    return blocked("BLOCKED_OTHER", "agent-policy-card: --from must be the guarded wallet");
+  }
+  if (args.message !== undefined) {
+    const early = toIntent(command, args, null);
+    if (early.kind === "typedData" && early.signer !== wallet) {
+      auditBlock("BLOCKED_OTHER");
+      return blocked("BLOCKED_OTHER", "agent-policy-card: the signer in --message must be the guarded wallet");
+    }
   }
 
   if (cls === "execute") {
     const requestId = args.requestId;
+    const family = command === "sign-message execute" ? "sign-message" : "contract-call";
     const entry = requestId === undefined ? null : getEntry(cfg, requestId);
-    if (entry === null || entry.verdict !== "ALLOW_FOR_PREVIEW" || deps.now() >= entry.expiresAt) {
+    if (entry === null || entry.verdict !== "ALLOW_FOR_PREVIEW" || deps.now() >= entry.expiresAt || entry.command !== family) {
       auditBlock("BLOCKED_OTHER");
       return blocked("BLOCKED_OTHER", "agent-policy-card: this requestId was not approved by the guard, is waiting for apc-confirm, or has expired; run preview through apc-baw again");
     }
@@ -80,7 +90,7 @@ export async function runShim(argv: string[], deps: ShimDeps): Promise<SpawnResu
         return blocked(reason);
       }
     }
-    return deps.spawnBaw(argv);
+    return deps.spawnBaw([family, "execute", "--requestId", requestId as string, "--json"]);
   }
 
   if (cls === "write-1step") {
@@ -101,20 +111,20 @@ export async function runShim(argv: string[], deps: ShimDeps): Promise<SpawnResu
   }
   if (res.code !== 0 || json === undefined) {
     auditBlock("MALFORMED_PREVIEW");
-    const out = blocked("MALFORMED_PREVIEW", res.stderr);
-    return res.code !== 0 ? { ...out, code: res.code } : out;
+    return blocked("MALFORMED_PREVIEW", res.stderr);
   }
   if (isObject(json) && json.success === false) {
-    // The wallet refused or intercepted it: no requestId exists, pass its own answer through.
+    // The wallet refused or intercepted it. Report its message, never its raw body.
     auditBlock("MALFORMED_PREVIEW");
-    return { code: EXIT_BLOCKED, stdout: res.stdout, stderr: res.stderr };
+    const err = isObject(json.error) && typeof json.error.message === "string" ? json.error.message.slice(0, 200) : "no message";
+    return blocked("MALFORMED_PREVIEW", `agent-policy-card: the wallet refused the preview: ${err}`);
   }
 
   const chain = await readChain(cfg, cfg.wallet);
   const d = evaluate(toIntent(command, args, json), chain, cfg.cardContract);
   const data = isObject(json) && isObject(json.data) ? json.data : {};
   const requestId = typeof data.requestId === "string" ? data.requestId : null;
-  const expiresAt = typeof data.expiresAt === "number" ? data.expiresAt : null;
+  const expiresAt = typeof data.expiresAt === "number" && Number.isFinite(data.expiresAt) && data.expiresAt > deps.now() ? data.expiresAt : null;
   const ph = policyHash(chain);
 
   if (d.verdict === "BLOCK" || requestId === null || expiresAt === null) {
@@ -123,7 +133,8 @@ export async function runShim(argv: string[], deps: ShimDeps): Promise<SpawnResu
     return blocked(reason);
   }
 
-  putEntry(cfg, { requestId, verdict: d.verdict, reasonCode: d.reasonCode, cardCall: d.cardCall, expiresAt, intentHash: hash, ...(d.summary ? { summary: d.summary } : {}) }, deps.now());
+  const family = command === "sign-message preview" ? "sign-message" : "contract-call";
+  putEntry(cfg, { requestId, verdict: d.verdict, reasonCode: d.reasonCode, cardCall: d.cardCall, expiresAt, intentHash: hash, command: family, ...(d.summary ? { summary: d.summary } : {}) }, deps.now());
   audit(d, requestId, ph);
 
   if (d.verdict === "PENDING_HUMAN_CONFIRM") {

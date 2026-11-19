@@ -35,6 +35,7 @@ export const SET_APPROVAL_FOR_ALL_SELECTOR = toFunctionSelector("setApprovalForA
 /** Write commands of the wallet CLI that execute in one step (no preview/execute pair). */
 export const ONE_STEP_COMMANDS: readonly string[] = [
   "wallet send",
+  "wallet speed-up",
   "market-order swap",
   "limit-order buy",
   "limit-order sell",

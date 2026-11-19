@@ -94,10 +94,10 @@ export function contractArgs(to: string, inputData: string, value = "0", chain =
   return { binanceChainId: chain, from: WALLET, to, value, inputData };
 }
 
-export function typedData(opts: { name: string; chainId?: number | string; verifyingContract: string; primaryType: string }): object {
+export function typedData(opts: { name: string; chainId?: number | string; verifyingContract: string; primaryType: string; message?: object }): object {
   const domain: Record<string, unknown> = { name: opts.name, verifyingContract: opts.verifyingContract };
   if (opts.chainId !== undefined) domain.chainId = opts.chainId;
-  return { domain, primaryType: opts.primaryType, types: {}, message: { spender: SPENDER, value: "1" } };
+  return { domain, primaryType: opts.primaryType, types: {}, message: opts.message ?? { contents: "hello" } };
 }
 
 export function signArgs(td: object, chain = "56"): Record<string, string> {
@@ -108,7 +108,7 @@ export function signArgs(td: object, chain = "56"): Record<string, string> {
   };
 }
 
-export const PERMIT_TD = typedData({ name: "USD Coin", chainId: 56, verifyingContract: TOKEN, primaryType: "Permit" });
+export const PERMIT_TD = typedData({ name: "USD Coin", chainId: 56, verifyingContract: TOKEN, primaryType: "Permit", message: { owner: WALLET, spender: SPENDER, value: "1" } });
 
 export function chainWith(policy: PolicyV1 | string = PRESETS["eip712-shield"], extra: { paused?: boolean; version?: number } = {}): ChainState {
   const policyText = typeof policy === "string" ? policy : canonicalize(policy);

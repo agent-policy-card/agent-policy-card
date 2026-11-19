@@ -1,7 +1,7 @@
 // Fail-closed policy evaluation. Pure: no I/O, runs in Node and in the browser.
 // The returned verdict never instructs anyone to sign automatically or to skip
 // the wallet's own confirmation step.
-import { decodeFunctionData } from "viem";
+import { decodeFunctionData, keccak256, stringToBytes } from "viem";
 import type { Intent, TypedDataInfo } from "./intent.js";
 import { parsePolicy } from "./schema.js";
 import { APPROVE_SELECTOR, CARD_ABI, CARD_SELECTORS, SET_APPROVAL_FOR_ALL_SELECTOR, TOKEN_ABI } from "./selectors.js";
@@ -79,10 +79,14 @@ const lower = (s: string) => s.toLowerCase();
 type RiskItem = { riskType?: unknown };
 type Risks = { riskDetails: RiskItem[]; addresses: Record<string, { riskDetails: RiskItem[] }> };
 
+function validRiskItems(items: unknown): boolean {
+  return Array.isArray(items) && items.every((r) => isObject(r) && (r.riskType === "RISK" || r.riskType === "CAUTION"));
+}
+
 function readRisks(v: unknown): Risks | null {
-  if (!isObject(v) || !Array.isArray(v.riskDetails) || !isObject(v.addresses)) return null;
+  if (!isObject(v) || !validRiskItems(v.riskDetails) || !isObject(v.addresses)) return null;
   for (const entry of Object.values(v.addresses)) {
-    if (!isObject(entry) || !Array.isArray(entry.riskDetails)) return null;
+    if (!isObject(entry) || !validRiskItems(entry.riskDetails)) return null;
   }
   return v as unknown as Risks;
 }
@@ -96,8 +100,9 @@ function previewData(preview: unknown): Record<string, unknown> | null {
 type ContractPreview = { allowanceChanges: unknown[]; authorityChanges: unknown[]; risks: Risks };
 function readContractPreview(preview: unknown): ContractPreview | null {
   const data = previewData(preview);
-  if (data === null || !isObject(data.simulationResult)) return null;
+  if (data === null || !isObject(data.simulationResult) || !isObject(data.parsedTx)) return null;
   const sim = data.simulationResult;
+  if (sim.simulationCode !== "000000000") return null;
   if (!Array.isArray(sim.allowanceChanges) || !Array.isArray(sim.authorityChanges)) return null;
   const risks = readRisks(data.risks);
   if (risks === null) return null;
@@ -107,7 +112,7 @@ function readContractPreview(preview: unknown): ContractPreview | null {
 type SignPreview = { parsedMessage: Record<string, unknown>; risks: Risks };
 function readSignPreview(preview: unknown): SignPreview | null {
   const data = previewData(preview);
-  if (data === null || !isObject(data.parsedMessage)) return null;
+  if (data === null || !isObject(data.parsedMessage) || data.parsedMessage.messageType !== "SignTypedData") return null;
   const risks = readRisks(data.risks);
   return risks === null ? null : { parsedMessage: data.parsedMessage, risks };
 }
@@ -125,18 +130,24 @@ function selectorOf(inputData: string): string {
 
 function evaluateCardCall(intent: Extract<Intent, { kind: "contractCall" }>, chain: ChainState): Decision {
   if (previewData(intent.preview) === null) return block("MALFORMED_PREVIEW", true);
+  if (intent.valueWei !== 0n) return block("BLOCKED_OTHER", true);
   const sel = selectorOf(intent.inputData);
+  const known = Object.values(CARD_SELECTORS) as string[];
+  if (!known.includes(sel)) return block("BLOCKED_OTHER", true);
+  // Throws on calldata that does not decode; the caller turns that into a block.
+  const { args: decoded } = decodeFunctionData({ abi: CARD_ABI, data: intent.inputData as `0x${string}` });
   if (sel === CARD_SELECTORS.pause || sel === CARD_SELECTORS.submitAttestation) return allow(true);
   if (sel === CARD_SELECTORS.unpause) return pending("unpause the agent card");
   if (sel === CARD_SELECTORS.setGuardian) {
-    const { args } = decodeFunctionData({ abi: CARD_ABI, data: intent.inputData as `0x${string}` });
-    return pending(`setGuardian to ${lower(String(args?.[0]))}`);
+    return pending(`setGuardian to ${lower(String(decoded?.[0]))}`);
   }
   if (sel === CARD_SELECTORS.publishCard) {
-    decodeFunctionData({ abi: CARD_ABI, data: intent.inputData as `0x${string}` });
     if (chain.ok && chain.card === null) return allow(true);
-    const next = chain.ok && chain.card !== null ? ` (version ${chain.card.version + 1})` : " (card state unreadable)";
-    return pending(`publishCard update${next}`);
+    const text = String(decoded?.[0] ?? "");
+    const parsedNew = parsePolicy(text);
+    const profile = parsedNew.ok ? `profile ${parsedNew.policy.profile}` : "unreadable policy text";
+    const next = chain.ok && chain.card !== null ? `version ${chain.card.version + 1}` : "card state unreadable";
+    return pending(`publishCard update (${next}): ${profile}, policy hash ${keccak256(stringToBytes(text))}, guardian ${lower(String(decoded?.[1]))}`);
   }
   return block("BLOCKED_OTHER", true);
 }
@@ -177,14 +188,16 @@ function evaluateTypedData(intent: Extract<Intent, { kind: "typedData" }>, polic
   if (intent.command === "sign-message preview" && sign === null) return block("MALFORMED_PREVIEW");
 
   const td = intent.typedData;
-  const chainId = domainChainId(td);
-  if (td.domain.chainId !== undefined && chainId !== SUPPORTED_CHAIN_ID) return block("BLOCKED_EIP712");
+  if (domainChainId(td) !== SUPPORTED_CHAIN_ID) return block("BLOCKED_EIP712");
 
   const { mode, deny } = policy.rules.eip712;
   const allowlisted = eip712Allowlisted(td, policy);
   if (mode === "allowlist" && !allowlisted) return block("BLOCKED_EIP712");
   if (mode === "denylist" && (deny ?? []).includes(td.primaryType)) return block("BLOCKED_EIP712");
 
+  if (!allowlisted && policy.rules.blockAuthorityChanges && isObject(td.message) && grantsAuthority(td.message)) {
+    return block("BLOCKED_APPROVE");
+  }
   if (sign !== null) {
     if (!allowlisted && policy.rules.blockAuthorityChanges && grantsAuthority(sign.parsedMessage)) return block("BLOCKED_APPROVE");
     if (policy.rules.blockOnBinanceRisk && hasRisk(sign.risks)) return block("BLOCKED_BINANCE_RISK");
@@ -236,12 +249,10 @@ export function evaluate(intent: Intent, chain: ChainState, cardContract: string
     // Step 1: chain.
     if (intent.kind === "contractCall" && intent.chainId !== SUPPORTED_CHAIN_ID) return block("UNSUPPORTED_CHAIN");
     if (intent.kind === "typedData") {
-      const c = intent.chainId ?? domainChainId(intent.typedData);
+      const c = intent.command === "sign-message preview" ? intent.chainId : (intent.chainId ?? domainChainId(intent.typedData));
       if (c !== SUPPORTED_CHAIN_ID) return block("UNSUPPORTED_CHAIN");
     }
-    if (intent.kind === "oneStep" && intent.chainId !== null && intent.chainId !== SUPPORTED_CHAIN_ID) {
-      return block("UNSUPPORTED_CHAIN");
-    }
+    if (intent.kind === "oneStep" && intent.chainId !== SUPPORTED_CHAIN_ID) return block("UNSUPPORTED_CHAIN");
 
     // Steps 2 to 4: card state and policy.
     if (!chain.ok) return block("CHAIN_READ_FAILED");
