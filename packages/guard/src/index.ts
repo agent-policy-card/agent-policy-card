@@ -3,3 +3,4 @@ export * from "./chain.js";
 export * from "./state.js";
 export * from "./audit.js";
 export * from "./commands.js";
+export * from "./claudeHook.js";
