@@ -1,10 +1,7 @@
 import { HashRouter, Link, Route, Routes } from "react-router-dom";
 import { CardView } from "./pages/CardView.js";
 import { Composer } from "./pages/Composer.js";
-
-function Placeholder({ name }: { name: string }) {
-  return <p>{name} is coming soon.</p>;
-}
+import { Guardian } from "./pages/Guardian.js";
 
 export function App() {
   return (
@@ -20,7 +17,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Composer />} />
           <Route path="/card/:address" element={<CardView />} />
-          <Route path="/guardian" element={<Placeholder name="Guardian" />} />
+          <Route path="/guardian" element={<Guardian />} />
         </Routes>
       </main>
     </HashRouter>
