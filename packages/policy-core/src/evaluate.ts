@@ -128,8 +128,8 @@ function selectorOf(inputData: string): string {
   return inputData.length >= 10 ? lower(inputData.slice(0, 10)) : "";
 }
 
-function evaluateCardCall(intent: Extract<Intent, { kind: "contractCall" }>, chain: ChainState): Decision {
-  if (previewData(intent.preview) === null) return block("MALFORMED_PREVIEW", true);
+function evaluateCardCall(intent: Extract<Intent, { kind: "contractCall" }>, chain: ChainState, pre: boolean): Decision {
+  if (!pre && previewData(intent.preview) === null) return block("MALFORMED_PREVIEW", true);
   if (intent.valueWei !== 0n) return block("BLOCKED_OTHER", true);
   const sel = selectorOf(intent.inputData);
   const known = Object.values(CARD_SELECTORS) as string[];
@@ -179,9 +179,9 @@ function grantsAuthority(parsed: Record<string, unknown>): boolean {
   return Array.isArray(parsed.details) && parsed.details.length > 0;
 }
 
-function evaluateTypedData(intent: Extract<Intent, { kind: "typedData" }>, policy: PolicyV1): Decision {
-  const sign = intent.preview === null ? null : readSignPreview(intent.preview);
-  if (sign === null) return block("MALFORMED_PREVIEW");
+function evaluateTypedData(intent: Extract<Intent, { kind: "typedData" }>, policy: PolicyV1, pre: boolean): Decision {
+  const sign = pre || intent.preview === null ? null : readSignPreview(intent.preview);
+  if (!pre && sign === null) return block("MALFORMED_PREVIEW");
 
   const td = intent.typedData;
   if (domainChainId(td) !== SUPPORTED_CHAIN_ID) return block("BLOCKED_EIP712");
@@ -203,13 +203,13 @@ function evaluateTypedData(intent: Extract<Intent, { kind: "typedData" }>, polic
 
 // ---------- contract calls ----------
 
-function evaluateContractCall(intent: Extract<Intent, { kind: "contractCall" }>, policy: PolicyV1): Decision {
-  const preview = readContractPreview(intent.preview);
-  if (preview === null) return block("MALFORMED_PREVIEW");
+function evaluateContractCall(intent: Extract<Intent, { kind: "contractCall" }>, policy: PolicyV1, pre: boolean): Decision {
+  const preview = pre ? null : readContractPreview(intent.preview);
+  if (!pre && preview === null) return block("MALFORMED_PREVIEW");
   const r = policy.rules;
   const sel = selectorOf(intent.inputData);
 
-  if (r.blockAuthorityChanges && (preview.authorityChanges.length > 0 || preview.allowanceChanges.length > 0)) {
+  if (preview !== null && r.blockAuthorityChanges && (preview.authorityChanges.length > 0 || preview.allowanceChanges.length > 0)) {
     return block("BLOCKED_APPROVE");
   }
   if (sel === APPROVE_SELECTOR && r.blockUnlimitedApprove) {
@@ -221,7 +221,7 @@ function evaluateContractCall(intent: Extract<Intent, { kind: "contractCall" }>,
     if (args?.[1] === true) return block("BLOCKED_APPROVE");
   }
 
-  if (r.blockOnBinanceRisk && hasRisk(preview.risks)) return block("BLOCKED_BINANCE_RISK");
+  if (preview !== null && r.blockOnBinanceRisk && hasRisk(preview.risks)) return block("BLOCKED_BINANCE_RISK");
 
   if (intent.valueWei > BigInt(r.maxNativeValueWei)) return block("BLOCKED_OTHER");
   if (sel !== "" && r.deniedSelectors.some((d) => lower(d) === sel)) return block("BLOCKED_SELECTOR");
@@ -233,13 +233,20 @@ function evaluateContractCall(intent: Extract<Intent, { kind: "contractCall" }>,
 
 // ---------- entry point ----------
 
-export function evaluate(intent: Intent, chain: ChainState, cardContract: string): Decision {
+export type EvaluateOptions = {
+  /** "pre": judge only what the arguments reveal, before the wallet CLI is called (no preview yet).
+   *  "post" (default): full evaluation including the wallet preview. */
+  stage?: "pre" | "post";
+};
+
+export function evaluate(intent: Intent, chain: ChainState, cardContract: string, opts: EvaluateOptions = {}): Decision {
+  const pre = opts.stage === "pre";
   try {
     if (intent.kind === "malformed") return block("MALFORMED_PREVIEW");
 
     // Step 0: calls to the card contract come first so the owner is never locked out.
     if (intent.kind === "contractCall" && intent.chainId === SUPPORTED_CHAIN_ID && lower(intent.to) === lower(cardContract)) {
-      return evaluateCardCall(intent, chain);
+      return evaluateCardCall(intent, chain, pre);
     }
 
     // Step 1: chain.
@@ -266,8 +273,8 @@ export function evaluate(intent: Intent, chain: ChainState, cardContract: string
     }
 
     // Steps 6 to 10.
-    if (intent.kind === "typedData") return evaluateTypedData(intent, policy);
-    return evaluateContractCall(intent, policy);
+    if (intent.kind === "typedData") return evaluateTypedData(intent, policy, pre);
+    return evaluateContractCall(intent, policy, pre);
   } catch {
     return block("MALFORMED_PREVIEW");
   }

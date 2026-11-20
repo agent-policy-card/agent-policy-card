@@ -100,7 +100,15 @@ export async function runShim(argv: string[], deps: ShimDeps): Promise<SpawnResu
     return d.verdict === "ALLOW_FOR_PREVIEW" ? deps.spawnBaw(argv) : blocked(d.reasonCode);
   }
 
-  // preview
+  // preview: first judge what the arguments alone reveal, so a request the card forbids never
+  // reaches the wallet CLI (and its own inner guards cannot hide our verdict).
+  const preChain = await readChain(cfg, cfg.wallet);
+  const preDecision = evaluate(toIntent(command, args, null), preChain, cfg.cardContract, { stage: "pre" });
+  if (preDecision.verdict === "BLOCK") {
+    audit(preDecision, null, policyHash(preChain));
+    return blocked(preDecision.reasonCode);
+  }
+
   const runArgv = argv.includes("--json") ? argv : [...argv, "--json"];
   const res = await deps.spawnBaw(runArgv);
   let json: unknown;

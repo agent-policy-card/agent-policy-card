@@ -126,3 +126,23 @@ describe("runShim audit fixes", () => {
     expect(getEntry(c, "k")?.requestId).toBe("k");
   });
 });
+
+describe("pre-check before the wallet CLI (day 1 finding: inner guards hid our own verdict)", () => {
+  it("an unlimited approve is blocked with BLOCKED_APPROVE and never reaches the wallet", async () => {
+    const approveMax = "0x095ea7b3000000000000000000000000000000000000000000000000000000000000deadffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const argv = ["contract-call", "preview", "--binanceChainId", "56", "--from", WALLET, "--to", OTHER, "--value", "0", "--inputData", approveMax, "--json"];
+    const calls: string[][] = [];
+    const r = await runShim(argv, shim(cfg(), () => ({ code: 3, stdout: "", stderr: "inner guard" }), calls));
+    expect(JSON.parse(r.stdout).reasonCode).toBe("BLOCKED_APPROVE");
+    expect(calls).toHaveLength(0);
+  });
+
+  it("a Permit signature is blocked with BLOCKED_EIP712 and never reaches the wallet", async () => {
+    const td = JSON.stringify({ domain: { name: "Test Token", chainId: 56, verifyingContract: OTHER }, primaryType: "Permit", message: { owner: WALLET } });
+    const argv = ["sign-message", "preview", "--binanceChainId", "56", "--signType", "EIP712", "--message", JSON.stringify({ method: "eth_signTypedData_v4", params: [WALLET, td] }), "--json"];
+    const calls: string[][] = [];
+    const r = await runShim(argv, shim(cfg(), () => okJson("{}"), calls));
+    expect(JSON.parse(r.stdout).reasonCode).toBe("BLOCKED_EIP712");
+    expect(calls).toHaveLength(0);
+  });
+});
