@@ -168,8 +168,7 @@ function eip712Allowlisted(td: TypedDataInfo, policy: PolicyV1): boolean {
     (e) =>
       e.chainId === chainId &&
       e.domainName === td.domain.name &&
-      vc !== null &&
-      lower(e.verifyingContract) === vc &&
+      (e.verifyingContract === undefined ? td.domain.verifyingContract === undefined : vc !== null && lower(e.verifyingContract) === vc) &&
       e.primaryType === td.primaryType,
   );
 }

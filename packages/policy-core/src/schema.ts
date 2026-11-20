@@ -8,7 +8,7 @@ const entry = z
   .object({
     chainId: z.number().int().positive(),
     domainName: z.string(),
-    verifyingContract: address,
+    verifyingContract: address.optional(),
     primaryType: z.string(),
   })
   .strict();

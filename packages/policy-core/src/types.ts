@@ -1,7 +1,8 @@
 export type Eip712AllowEntry = {
   chainId: number;
   domainName: string;
-  verifyingContract: string;
+  /** Omitted for typed data whose domain has no verifyingContract (for example login messages). */
+  verifyingContract?: string;
   primaryType: string;
 };
 
