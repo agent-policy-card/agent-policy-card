@@ -2,16 +2,22 @@
 import { CARD_ABI } from "@apc/policy-core";
 import { createPublicClient, fallback, http } from "viem";
 import { buildAttestation, proofFor, saveAttestationFile } from "../src/attest.js";
+import { ATTEST_USAGE, parseAttestArgs } from "../src/attestArgs.js";
 import { readAuditLines } from "../src/audit.js";
 import { loadConfig } from "../src/config.js";
 import { RPC_TIMEOUT_MS } from "../src/chain.js";
 
 async function main(): Promise<void> {
+  const args = parseAttestArgs(process.argv.slice(2));
+  if (args.mode === "usage") {
+    if (args.error !== null) process.stderr.write(`apc-attest: ${args.error}\n`);
+    process.stdout.write(ATTEST_USAGE);
+    process.exitCode = args.error === null ? 0 : 2;
+    return;
+  }
   const cfg = loadConfig();
-  if (process.argv[2] === "proof") {
-    const periodEnd = Number(process.argv[3]);
-    const index = Number(process.argv[4]);
-    process.stdout.write(`${JSON.stringify(proofFor(cfg.dataDir, periodEnd, index))}\n`);
+  if (args.mode === "proof") {
+    process.stdout.write(`${JSON.stringify(proofFor(cfg.dataDir, args.periodEnd, args.index))}\n`);
     return;
   }
   const client = createPublicClient({
