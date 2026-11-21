@@ -115,7 +115,7 @@ function GuardianInner() {
             </label>
             {!deployed && <p className="alert">The card contract is not deployed yet.</p>}
             {readError && <p className="alert">{readError === "Not a 0x address" ? "That is not a full 0x address." : "Could not read the card from the chain."}</p>}
-            {deployed && !readError && <p>{message(state)}</p>}
+            {deployed && !readError && <p>{trimmed === "" ? "Paste the agent wallet address shown on the card you guard." : message(state)}</p>}
           </Section>
 
           <Section head="Your wallet">

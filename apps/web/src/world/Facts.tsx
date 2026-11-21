@@ -2,12 +2,13 @@ import { SAMPLE_CARD_CONTRACT, SAMPLE_INTENTS, evaluate, type Decision, type Pol
 import { useState, type ReactNode } from "react";
 import { toFacts } from "../lib/facts";
 
-export type CardStatus = "ACTIVE" | "PAUSED" | "NONE";
+export type CardStatus = "ACTIVE" | "PAUSED" | "NONE" | "DRAFT";
 
 const STATUS_CLASS: Record<CardStatus, string> = {
   ACTIVE: "status status--active",
   PAUSED: "status status--paused",
   NONE: "status status--none",
+  DRAFT: "status status--none",
 };
 
 export function PanelHeader({ title = "Policy Facts", status, children }: { title?: string; status?: CardStatus; children?: ReactNode }) {
@@ -40,9 +41,9 @@ export function RulesAndLimits({ policy, ticket }: { policy: PolicyV1; ticket?: 
   return (
     <>
       <Section head="Rules" note={ticket}>
-        <ol className="rows">
-          {facts.rules.map((r) => (
-            <li key={r.number}>
+        <ol className="rows rows--print">
+          {facts.rules.map((r, i) => (
+            <li key={r.number} style={{ ["--i" as string]: i }}>
               <span className="rule-num">Rule {r.number}</span>
               <span>{r.text}</span>
             </li>

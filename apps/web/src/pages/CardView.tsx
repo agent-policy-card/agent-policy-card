@@ -135,6 +135,11 @@ function CardFacts({ card, block }: { card: CardData; block: bigint | null }) {
                 Attestation {card.attestation.epoch}, {fmtDate(card.attestation.periodStart)} to {fmtDate(card.attestation.periodEnd)}
               </dt>
               <dd>Merkle root {card.attestation.logMerkleRoot}</dd>
+              <dd>
+                <a className="ticket" href={`https://bscscan.com/address/${CARD_CONTRACT}#events`} target="_blank" rel="noreferrer">
+                  submitted {fmtDate(card.attestation.submittedAt)} · see contract events
+                </a>
+              </dd>
             </div>
           </dl>
         ) : (

@@ -47,6 +47,15 @@ export function Composer() {
     }
   }, [policy, guardianText]);
 
+  // HashRouter owns the URL hash, so scroll without touching it.
+  function goToDirections() {
+    const target = document.getElementById("directions");
+    if (!target) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    document.querySelector<HTMLInputElement>('#directions input[name="preset"]:checked')?.focus({ preventScroll: true });
+  }
+
   async function copy() {
     if (!result.ok || notDeployed) return;
     try {
@@ -67,15 +76,15 @@ export function Composer() {
           command against it before anything is signed, and your own confirmation still comes last.
         </p>
         <p>
-          <a className="sticker" href="#directions">
+          <button type="button" className="sticker" onClick={goToDirections}>
             Publish yours in one minute
-          </a>
+          </button>
         </p>
       </div>
 
       <div className="carton-columns">
         <article className="panel" aria-label="Policy Facts for the card you are composing">
-          <PanelHeader status="ACTIVE">
+          <PanelHeader status="DRAFT">
             <span>Your card, as it will be published</span>
           </PanelHeader>
 
