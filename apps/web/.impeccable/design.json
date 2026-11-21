@@ -1,0 +1,396 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-21T17:39:41+00:00",
+  "title": "Design System: Agent Policy Card",
+  "extensions": {
+    "colorMeta": {
+      "carton": {
+        "role": "primary",
+        "displayName": "Electric Cobalt Carton",
+        "canonical": "oklch(51.2% 0.273 264.8)",
+        "tonalRamp": [
+          "#020042",
+          "#020677",
+          "#0827b0",
+          "#1645ed",
+          "#346eff",
+          "#619bff",
+          "#91c5ff",
+          "#c2edff"
+        ],
+        "darkScheme": "#1238d6"
+      },
+      "carton-deep": {
+        "role": "primary",
+        "displayName": "Deep Cobalt",
+        "canonical": "oklch(42.5% 0.230 264.8)",
+        "tonalRamp": [
+          "#01003a",
+          "#03156a",
+          "#10329f",
+          "#2250d8",
+          "#4176ff",
+          "#6c9fff",
+          "#9ac6ff",
+          "#c9eeff"
+        ],
+        "darkScheme": "#0a2694"
+      },
+      "sticker": {
+        "role": "secondary",
+        "displayName": "Highlight Sticker Yellow",
+        "canonical": "oklch(87.9% 0.162 90.9)",
+        "tonalRamp": [
+          "#170700",
+          "#382000",
+          "#5b3c00",
+          "#815a00",
+          "#a47c00",
+          "#c3a138",
+          "#e2c778",
+          "#ffedb1"
+        ]
+      },
+      "tamper": {
+        "role": "tertiary",
+        "displayName": "Tamper Red",
+        "canonical": "oklch(60.2% 0.215 27.7)",
+        "tonalRamp": [
+          "#2a0000",
+          "#560000",
+          "#850000",
+          "#b8040f",
+          "#e14037",
+          "#fd7568",
+          "#ffa597",
+          "#ffd4c7"
+        ]
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Allowed Green",
+        "canonical": "oklch(50.9% 0.129 152.5)",
+        "tonalRamp": [
+          "#001201",
+          "#00300f",
+          "#005126",
+          "#15743e",
+          "#40975e",
+          "#72b886",
+          "#a1d9af",
+          "#d0fcda"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Facts Panel White",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "darkScheme": "#f4f4f1"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Label Ink",
+        "canonical": "oklch(15.0% 0.002 286.1)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#252526",
+          "#424243",
+          "#616162",
+          "#828283",
+          "#a5a5a6",
+          "#c9c9ca",
+          "#eeeeef"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "oklch(35.5% 0.012 285.8)",
+        "tonalRamp": [
+          "#0b0b0e",
+          "#252529",
+          "#414147",
+          "#606067",
+          "#818189",
+          "#a4a4ab",
+          "#c8c8ce",
+          "#eeeef2"
+        ]
+      },
+      "on-carton": {
+        "role": "neutral",
+        "displayName": "On-Carton White",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "on-carton-soft": {
+        "role": "neutral",
+        "displayName": "On-Carton Soft",
+        "canonical": "oklch(90.5% 0.045 274.4)",
+        "tonalRamp": [
+          "#080a14",
+          "#212433",
+          "#3c4155",
+          "#5a6079",
+          "#7a819c",
+          "#9ea4bc",
+          "#c3c8dc",
+          "#eaeefe"
+        ]
+      },
+      "carton-paused": {
+        "role": "neutral",
+        "displayName": "Paused Slate",
+        "canonical": "oklch(32.9% 0.056 272.0)",
+        "tonalRamp": [
+          "#070a17",
+          "#1f2437",
+          "#3a415a",
+          "#57607f",
+          "#7781a2",
+          "#9ba4c1",
+          "#c1c8e1",
+          "#e8eeff"
+        ],
+        "darkScheme": "#1d2238"
+      },
+      "cmd-well": {
+        "role": "neutral",
+        "displayName": "Command Well",
+        "canonical": "oklch(94.3% 0.003 106.5)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252524",
+          "#424241",
+          "#616160",
+          "#828281",
+          "#a5a5a4",
+          "#c9c9c8",
+          "#eeeeed"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Carton Claim",
+        "purpose": "The one-line uppercase claim on the carton (lede h1)."
+      },
+      "headline": {
+        "displayName": "Panel Title",
+        "purpose": "\"Policy Facts\" panel title; the wordmark shares the face at 22px uppercase."
+      },
+      "title": {
+        "displayName": "Section Head",
+        "purpose": "Panel section heads: Rules, Limits, Warnings, Directions, Try an attack."
+      },
+      "body": {
+        "displayName": "Reading",
+        "purpose": "Body copy; panel rows 15px, warnings 14px, lede 18px."
+      },
+      "label": {
+        "displayName": "Print Label",
+        "purpose": "Status chips and rule numbers, tabular."
+      },
+      "mono": {
+        "displayName": "Verifiable Mono",
+        "purpose": "Addresses, commands, hashes, tickets and reason codes."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sticker-rest",
+        "value": "0 6px 14px -6px rgba(11, 11, 12, 0.5)",
+        "purpose": "Primary sticker at rest; the only shadow in the system."
+      },
+      {
+        "name": "sticker-lift",
+        "value": "0 9px 18px -8px rgba(11, 11, 12, 0.55)",
+        "purpose": "Sticker hover with translateY(-1px)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-print",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Shared easing for every transition and animation."
+      },
+      {
+        "name": "sticker-press",
+        "value": "160ms",
+        "purpose": "Sticker lift on hover and press on active."
+      },
+      {
+        "name": "stamp-land",
+        "value": "260ms",
+        "purpose": "Verdict stamp from scale 1.6, transparent, 2px blur to rest at -4deg."
+      },
+      {
+        "name": "row-print",
+        "value": "380ms, 45ms stagger",
+        "purpose": "Rule rows print in once from 35% opacity and 4px down; only with motion allowed."
+      },
+      {
+        "name": "carton-state",
+        "value": "400ms",
+        "purpose": "Carton background change between cobalt and paused slate."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "columns-collapse",
+        "value": "900px"
+      }
+    ],
+    "rules": {
+      "thick": "9px solid var(--ink)",
+      "section": "4px solid var(--ink)",
+      "hairline": "1px solid var(--hair)"
+    }
+  },
+  "components": [
+    {
+      "name": "Sticker (Primary Button)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action per screen: Copy prompt, Copy link.",
+      "html": "<button class=\"ds-sticker\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"square\" aria-hidden=\"true\"><rect x=\"8\" y=\"8\" width=\"12\" height=\"12\"/><path d=\"M4 16V4h12\"/></svg>Copy prompt</button>",
+      "css": ".ds-sticker { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font); font-weight: 900; font-variation-settings: 'wdth' 75; font-size: 20px; padding: 12px 20px; border: 2px solid var(--ink); border-radius: 0; background: var(--sticker); color: var(--sticker-ink); cursor: pointer; box-shadow: 0 6px 14px -6px rgba(11, 11, 12, 0.5); transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 160ms; } .ds-sticker svg { width: 20px; height: 20px; } .ds-sticker:hover { transform: translateY(-1px); box-shadow: 0 9px 18px -8px rgba(11, 11, 12, 0.55); } .ds-sticker:active { transform: translateY(1px); } .ds-sticker:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Sticker",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Pause on the Guardian page only.",
+      "html": "<button class=\"ds-sticker-danger\">Pause this agent</button>",
+      "css": ".ds-sticker-danger { font-family: var(--font); font-weight: 900; font-variation-settings: 'wdth' 75; font-size: 20px; padding: 12px 20px; border: 2px solid var(--ink); border-radius: 0; background: var(--tamper); color: #ffffff; cursor: pointer; box-shadow: 0 6px 14px -6px rgba(11, 11, 12, 0.5); transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 160ms; } .ds-sticker-danger:hover { transform: translateY(-1px); box-shadow: 0 9px 18px -8px rgba(11, 11, 12, 0.55); } .ds-sticker-danger:focus-visible { outline: 3px solid var(--carton); outline-offset: 2px; } .ds-sticker-danger:disabled { background: var(--panel); color: var(--tamper); border-color: var(--tamper); box-shadow: none; background-image: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(229, 50, 45, 0.12) 10px 20px); cursor: not-allowed; }"
+    },
+    {
+      "name": "Try It (Secondary Button)",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Simulator rows, Verify line, wallet connect inside the panel.",
+      "html": "<button class=\"ds-try\">Try it</button>",
+      "css": ".ds-try { font-family: var(--font); font-weight: 700; font-size: 14px; padding: 6px 12px; border: 2px solid var(--ink); border-radius: 0; background: var(--panel); color: var(--ink); cursor: pointer; } .ds-try:hover { background: var(--ink); color: var(--panel); } .ds-try:focus-visible { outline: 3px solid var(--carton); outline-offset: 2px; }"
+    },
+    {
+      "name": "Panel Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Labelled mono input inside the facts panel.",
+      "html": "<label class=\"ds-field\">Card address<input placeholder=\"0x...\"><small>The 0x address of the agent.</small></label>",
+      "css": ".ds-field { display: grid; gap: 4px; font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--ink); } .ds-field input { font-family: var(--mono); font-weight: 400; font-size: 14px; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 0; background: var(--panel); color: var(--ink); caret-color: var(--carton); } .ds-field input:focus-visible { outline: 3px solid var(--carton); outline-offset: 2px; } .ds-field small { font-weight: 400; color: var(--ink-soft); }"
+    },
+    {
+      "name": "Top Navigation",
+      "kind": "nav",
+      "description": "Wordmark and two links on the carton.",
+      "html": "<header class=\"ds-topbar\"><a class=\"ds-wordmark\" href=\"#\">Agent Policy Card</a><nav><a href=\"#\" aria-current=\"page\">Publish</a><a href=\"#\">Guardian</a></nav></header>",
+      "css": ".ds-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 16px; background: var(--carton); color: var(--on-carton); font-family: var(--font); } .ds-wordmark { color: inherit; font-weight: 900; font-variation-settings: 'wdth' 62; font-size: 22px; letter-spacing: -0.01em; text-transform: uppercase; text-decoration: none; line-height: 1; } .ds-topbar nav { display: flex; gap: 18px; font-weight: 600; font-size: 15px; } .ds-topbar nav a { color: var(--on-carton-soft); text-decoration: none; text-underline-offset: 0.2em; text-decoration-thickness: 1px; } .ds-topbar nav a:hover, .ds-topbar nav a[aria-current='page'] { color: var(--on-carton); text-decoration: underline; } .ds-topbar a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "description": "Card status beside the panel title.",
+      "html": "<span class=\"ds-status ds-status-active\">ACTIVE</span> <span class=\"ds-status ds-status-paused\">PAUSED</span> <span class=\"ds-status ds-status-none\">NO CARD</span>",
+      "css": ".ds-status { display: inline-block; padding: 1px 8px; border: 2px solid currentColor; font-family: var(--font); font-weight: 800; font-variation-settings: 'wdth' 75; font-size: 13px; letter-spacing: 0.04em; background: var(--panel); } .ds-status-active { color: var(--ok); } .ds-status-paused { color: var(--tamper); } .ds-status-none { color: var(--ink-soft); }"
+    },
+    {
+      "name": "Policy Facts Panel",
+      "kind": "card",
+      "refersTo": "facts-panel",
+      "description": "The white panel with the 9px, 4px and 1px rule hierarchy, numbered rules and an origin ticket.",
+      "html": "<article class=\"ds-panel\"><h2 class=\"ds-panel-title\">Policy Facts</h2><div class=\"ds-panel-sub\">ACTIVE <a class=\"ds-ticket\" href=\"#\">block 1234567</a></div><hr class=\"ds-rule-thick\"><section class=\"ds-section\"><h3 class=\"ds-head\">Rules</h3><ol class=\"ds-rows\"><li><span class=\"ds-num\">Rule 01</span><span>Never sign a token Permit.</span></li><li><span class=\"ds-num\">Rule 02</span><span>Never approve an unlimited allowance.</span></li></ol></section><section class=\"ds-section\"><h3 class=\"ds-head\">Limits</h3><ul class=\"ds-rows\"><li><span>Native value per call</span><strong>0.02 BNB</strong></li></ul></section></article>",
+      "css": ".ds-panel { max-width: 600px; background: var(--panel); color: var(--ink); border: 2px solid var(--ink); border-radius: 0; padding: 18px 18px 22px; font-family: var(--font); } .ds-panel-title { margin: 0; font-weight: 900; font-variation-settings: 'wdth' 62; font-size: 58px; line-height: 0.95; letter-spacing: -0.015em; } .ds-panel-sub { display: flex; gap: 12px; align-items: center; margin-top: 6px; font-size: 14px; color: var(--ink-soft); } .ds-rule-thick { border: 0; border-top: 9px solid var(--ink); margin: 12px 0 0; } .ds-section { padding-top: 8px; } .ds-section + .ds-section { margin-top: 10px; border-top: 4px solid var(--ink); } .ds-head { margin: 0 0 4px; font-weight: 900; font-variation-settings: 'wdth' 75; font-size: 20px; } .ds-rows { list-style: none; margin: 0; padding: 0; } .ds-rows > li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 6px 0; border-top: 1px solid var(--ink); font-size: 15px; } .ds-rows > li:first-child { border-top: 0; } .ds-rows strong { font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; } .ds-num { font-weight: 800; font-variation-settings: 'wdth' 75; font-variant-numeric: tabular-nums; white-space: nowrap; } .ds-ticket { display: inline-flex; padding: 0 6px; border: 1px dashed var(--ink-soft); font-family: var(--mono); font-size: 11px; color: var(--ink-soft); text-decoration: none; } .ds-ticket:hover { border-style: solid; color: var(--ink); } .ds-ticket:focus-visible { outline: 3px solid var(--carton); outline-offset: 2px; }"
+    },
+    {
+      "name": "Verdict Stamp",
+      "kind": "custom",
+      "description": "Lands on a simulator row after Try it: BLOCKED or ALLOWED with the reason code.",
+      "html": "<span class=\"ds-stamp ds-stamp-block\">BLOCKED<small>PERMIT_SIGNATURE</small></span> <span class=\"ds-stamp ds-stamp-allow\">ALLOWED<small>OK</small></span>",
+      "css": ".ds-stamp { display: inline-block; padding: 2px 8px; border: 3px solid currentColor; font-family: var(--font); font-weight: 900; font-variation-settings: 'wdth' 62; font-size: 18px; letter-spacing: 0.04em; transform: rotate(-4deg); background: var(--panel); animation: ds-stamp 260ms cubic-bezier(0.16, 1, 0.3, 1) both; } .ds-stamp small { display: block; font-family: var(--mono); font-weight: 500; font-size: 10px; letter-spacing: 0; } .ds-stamp-block { color: var(--tamper); } .ds-stamp-allow { color: var(--ok); } @keyframes ds-stamp { from { transform: rotate(-4deg) scale(1.6); opacity: 0; filter: blur(2px); } to { transform: rotate(-4deg) scale(1); opacity: 1; filter: blur(0); } } @media (prefers-reduced-motion: reduce) { .ds-stamp { animation: none; } }"
+    },
+    {
+      "name": "Tamper Strip",
+      "kind": "custom",
+      "refersTo": "tamper-strip",
+      "description": "Crosses the panel top when a card is paused; pairs with the slate carton.",
+      "html": "<div class=\"ds-tamper-wrap\"><div class=\"ds-tamper\">Paused · every guarded action is blocked</div></div>",
+      "css": ".ds-tamper-wrap { background: var(--carton-paused); padding: 16px; } .ds-tamper { padding: 8px 18px; background: var(--tamper); color: #ffffff; font-family: var(--font); font-weight: 900; font-variation-settings: 'wdth' 62; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; background-image: repeating-linear-gradient(-45deg, transparent 0 14px, rgba(255, 255, 255, 0.14) 14px 28px); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Policy Facts Panel",
+    "overview": "Every agent's rules are printed like the regulated facts panel on an over-the-counter medicine carton. The page is the carton: one saturated electric cobalt field, edge to edge, with the product claim set huge and condensed on it. Centered on the carton sits a white Policy Facts panel, ruled in heavy and hairline black, carrying real chain data in a fixed order: Rules, Limits, Warnings, the attestation record, and Directions. The panel is never decorative; it is the content.\n\nState owns the whole surface. A paused card does not get a small badge: the carton dims to slate and a red tamper strip crosses the top of the panel. The one action on any screen is a yellow highlight sticker. Origin tickets (dashed monospace stubs linking to a block, a tx, or the contract) sit beside the facts they prove, so every statement is checkable. The voice is plain and regulatory, never promotional; the system rejects the dark crypto dashboard with glowing edges and the three-feature-card SaaS landing.\n\nDensity is that of a printed label: tight rows, tabular numbers, short condensed heads. Motion is minimal and physical: rule rows print in once, simulator verdicts land as a pressed stamp.",
+    "keyCharacteristics": [
+      "One saturated cobalt carton field per page; the panel is the only white surface.",
+      "A three-weight rule hierarchy (9px, 4px, 1px) does all structural work inside the panel.",
+      "Archivo Variable carries everything, with the width axis as the main expressive tool (62 for display, 75 for heads, 100 for reading).",
+      "Square corners everywhere; no radius in the system.",
+      "Yellow means the one action, red means blocked or paused, green means allowed or done."
+    ],
+    "rules": [
+      {
+        "name": "The One Field Rule",
+        "body": "A page has exactly one carton color filling the viewport, cobalt when live and slate when paused. No gradients, no second field color, no cards floating on a neutral background.",
+        "section": "colors"
+      },
+      {
+        "name": "The Signal Meaning Rule",
+        "body": "Yellow is the one action, red is blocked or paused, green is allowed or done. None of the three is used decoratively.",
+        "section": "colors"
+      },
+      {
+        "name": "The Width Axis Rule",
+        "body": "Hierarchy is expressed through `wdth` first (62, 75, 100), then weight. Display and stamps are wdth 62, heads and labels wdth 75, reading text wdth 100.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Facts Rule",
+        "body": "Every number, rule number, limit value and count uses tabular figures so columns align like a printed label.",
+        "section": "typography"
+      },
+      {
+        "name": "The Only The Sticker Lifts Rule",
+        "body": "No panel, card, chip or input casts a shadow. The sticker is the only element allowed to sit above the print.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep one carton field per page: #1546ff live, #2b3352 paused, nothing else behind the panel.",
+      "**Do** structure the panel only with the 9px / 4px / 1px Label Ink rule hierarchy.",
+      "**Do** express type hierarchy through Archivo's width axis (62, 75, 100) before weight.",
+      "**Do** put an origin ticket beside any fact that chain data can prove.",
+      "**Do** use the yellow sticker for exactly one primary action per screen.",
+      "**Do** show the paused state on the whole surface (slate carton plus tamper strip), not as a badge alone.",
+      "**Do** use tabular figures for every number and mono for addresses, commands and hashes.",
+      "**Do** respect reduced motion: no stamp animation, no row print, no carton color transition."
+    ],
+    "donts": [
+      "**Don't** round corners anywhere; the system radius is 0px.",
+      "**Don't** cast shadows from panels, chips, inputs or secondary buttons; only the sticker lifts.",
+      "**Don't** use yellow, red or green decoratively; each carries one meaning.",
+      "**Don't** build a dark crypto dashboard with glowing edges or a three-feature-card SaaS grid.",
+      "**Don't** fill the panel with decoration or invented data; it holds real card data or an honest empty state.",
+      "**Don't** show a name lookup next to an address; addresses appear as 0x values only."
+    ]
+  }
+}

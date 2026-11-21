@@ -15,7 +15,7 @@
   --hair: #0b0b0c;
   --sticker: #ffd23f;
   --sticker-ink: #0b0b0c;
-  --tamper: #e5322d;
+  --tamper: #cc2620;
   --ok: #0a7a3f;
   --focus: #ffd23f;
   --font: "Archivo Variable", "Archivo", system-ui, sans-serif;
@@ -699,7 +699,9 @@ a.ticket:hover {
 }
 
 .carton-error {
-  color: var(--sticker);
+  color: var(--on-carton);
+  text-decoration: underline var(--sticker) 2px;
+  text-underline-offset: 0.2em;
   font-weight: 700;
   margin-top: 6px;
 }
@@ -736,7 +738,7 @@ a.ticket:hover {
   color: var(--tamper);
   border-color: var(--tamper);
   box-shadow: none;
-  background-image: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(229, 50, 45, 0.12) 10px 20px);
+  background-image: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(204, 38, 32, 0.12) 10px 20px);
 }
 
 .panel input,
