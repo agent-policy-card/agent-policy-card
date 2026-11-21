@@ -4,6 +4,8 @@ A public, self-declared rule card for AI agents whose wallet holds an Agent ID o
 
 The wallet owner publishes the rules their agent must follow. A guard on the agent's machine checks every wallet command against those rules before the wallet CLI runs it. A guardian the owner chooses can pause the agent remotely, and the owner can anchor a Merkle root of the guard's audit log on chain so anyone can check a single logged decision.
 
+**Live site:** https://hoanghieu512.github.io/agent-policy-card/
+
 **A card is a verifiable self-declaration, not a compliance certificate.** The contract cannot know whether an agent actually runs the guard.
 
 ## Why Agent ID
