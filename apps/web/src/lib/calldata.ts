@@ -34,3 +34,13 @@ export function buildAgentPrompt(cardContract: string, calldata: Hex): string {
     'Show me the parsed transaction and risks, then wait for my explicit "yes" before running contract-call execute.',
   ].join("\n");
 }
+
+/** Prompt for an in-app assistant (Binance AI Pro) that drives the Agentic Wallet without CLI syntax. */
+export function buildAiProPrompt(cardContract: string, calldata: Hex): string {
+  return [
+    "Publish my Agent Policy Card from my Agentic Wallet on BNB Smart Chain (chain id 56).",
+    `Make one contract call to ${cardContract} with value 0 and this input data:`,
+    calldata,
+    'First show me the preview: the contract, the parsed transaction and any risks. Then wait for my explicit "yes" before you send it. Do not approve any token and do not send any other transaction.',
+  ].join("\n");
+}

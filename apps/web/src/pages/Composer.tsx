@@ -2,11 +2,13 @@ import { CARD_CONTRACT, PRESETS, canonicalize } from "@apc/policy-core";
 import type { PolicyV1 } from "@apc/policy-core";
 import { useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { buildAgentPrompt, buildPublishCalldata } from "../lib/calldata";
+import { buildAgentPrompt, buildAiProPrompt, buildPublishCalldata } from "../lib/calldata";
 import { shortAddress } from "../lib/facts";
 import { isAddress0x } from "../lib/readCard";
 import { Carton, CopyIcon } from "../world/Carton";
+import { AttackDemo } from "../world/AttackDemo";
 import { PanelHeader, RulesAndLimits, Section, TryAnAttack, Warnings } from "../world/Facts";
+import { Wall } from "../world/Wall";
 
 type PresetKey = keyof typeof PRESETS;
 
@@ -23,6 +25,7 @@ export function Composer() {
   const [allowedText, setAllowedText] = useState("");
   const [guardianText, setGuardianText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [channel, setChannel] = useState<"cli" | "aipro">("cli");
 
   const notDeployed = CARD_CONTRACT.toLowerCase() === ZERO;
 
@@ -41,11 +44,12 @@ export function Composer() {
     try {
       const guardian = guardianText.trim() === "" ? null : guardianText.trim();
       const calldata = buildPublishCalldata(policy, guardian);
-      return { ok: true as const, prompt: buildAgentPrompt(CARD_CONTRACT, calldata) };
+      const prompt = channel === "cli" ? buildAgentPrompt(CARD_CONTRACT, calldata) : buildAiProPrompt(CARD_CONTRACT, calldata);
+      return { ok: true as const, prompt };
     } catch (e) {
       return { ok: false as const, error: e instanceof Error ? e.message : "Check the fields above." };
     }
-  }, [policy, guardianText]);
+  }, [policy, guardianText, channel]);
 
   // HashRouter owns the URL hash, so scroll without touching it.
   function goToDirections() {
@@ -69,7 +73,8 @@ export function Composer() {
 
   return (
     <Carton>
-      <div className="lede">
+      <div className="lede lede--split">
+        <div className="lede-copy">
         <h1>Your agent's rules, printed on chain.</h1>
         <p>
           Publish a public policy card for the agent behind your Agent ID. A guard on the agent's machine checks every wallet
@@ -80,6 +85,8 @@ export function Composer() {
             Publish yours in one minute
           </button>
         </p>
+        </div>
+        <AttackDemo />
       </div>
 
       <div className="carton-columns">
@@ -138,6 +145,17 @@ export function Composer() {
               <li>
                 <div>
                   <p>Copy the prompt and paste it to your agent. It previews the transaction, shows you the details and waits for your yes.</p>
+                  <div className="segmented" role="radiogroup" aria-label="Where your agent runs">
+                    <label>
+                      <input type="radio" name="channel" checked={channel === "cli"} onChange={() => { setChannel("cli"); setCopied(false); }} />
+                      <span>My agent runs the wallet CLI</span>
+                    </label>
+                    <label>
+                      <input type="radio" name="channel" checked={channel === "aipro"} onChange={() => { setChannel("aipro"); setCopied(false); }} />
+                      <span>Binance AI Pro in the app</span>
+                    </label>
+                  </div>
+                  {channel === "aipro" && <p className="note">Paste it into AI Pro in the Binance app. This path has not been tested end to end by us yet; if AI Pro cannot make contract calls, use an agent with the wallet CLI.</p>}
                   {notDeployed && <p className="alert">The card contract is not deployed yet.</p>}
                   {!result.ok && <p className="alert">{result.error}</p>}
                   <button type="button" className="sticker" onClick={copy} disabled={notDeployed || !result.ok}>
@@ -191,6 +209,8 @@ export function Composer() {
           </section>
         </aside>
       </div>
+
+      <Wall />
     </Carton>
   );
 }

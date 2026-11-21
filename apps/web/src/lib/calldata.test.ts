@@ -57,3 +57,19 @@ describe("buildAgentPrompt", () => {
     expect(prompt).not.toContain("execute --requestId");
   });
 });
+
+describe("buildAiProPrompt", () => {
+  it("asks the in-app assistant for a contract call with preview and an explicit yes, without CLI syntax", async () => {
+    const { buildAiProPrompt, buildPublishCalldata } = await import("./calldata");
+    const { PRESETS } = await import("@apc/policy-core");
+    const cd = buildPublishCalldata(PRESETS["eip712-shield"], null);
+    const p = buildAiProPrompt("0x2222222222222222222222222222222222222222", cd);
+    expect(p).toContain("BNB Smart Chain (chain id 56)");
+    expect(p).toContain("0x2222222222222222222222222222222222222222");
+    expect(p).toContain(cd);
+    expect(p).toContain("value 0");
+    expect(p).toContain('wait for my explicit "yes"');
+    expect(p).not.toContain("baw ");
+    expect(p).not.toContain("execute --requestId");
+  });
+});
