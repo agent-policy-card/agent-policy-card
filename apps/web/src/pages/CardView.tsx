@@ -1,21 +1,17 @@
-import { CARD_CONTRACT } from "@apc/policy-core";
+import { CARD_CONTRACT, parsePolicy } from "@apc/policy-core";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { AuditVerifier } from "../components/AuditVerifier";
-import { Simulator } from "../components/Simulator";
 import { publicClient } from "../lib/chain";
+import { shortAddress } from "../lib/facts";
 import { readCard, type CardData } from "../lib/readCard";
+import { Carton, CopyIcon } from "../world/Carton";
+import { PanelHeader, RulesAndLimits, Section, TryAnAttack, Warnings } from "../world/Facts";
 
-type State = { kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; card: CardData };
-
-const BADGE: Record<CardData["status"], { label: string; color: string }> = {
-  ACTIVE: { label: "ACTIVE", color: "var(--accent)" },
-  PAUSED: { label: "PAUSED", color: "var(--danger)" },
-  NONE: { label: "NO CARD", color: "var(--muted)" },
-};
+type State = { kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; card: CardData; block: bigint | null };
 
 function fmtDate(unixSeconds: number): string {
-  return new Date(unixSeconds * 1000).toLocaleString();
+  return new Date(unixSeconds * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export function CardView() {
@@ -26,9 +22,9 @@ export function CardView() {
   useEffect(() => {
     let cancelled = false;
     setState({ kind: "loading" });
-    readCard(address, publicClient, CARD_CONTRACT).then((r) => {
+    Promise.all([readCard(address, publicClient, CARD_CONTRACT), publicClient.getBlockNumber().catch(() => null)]).then(([r, block]) => {
       if (cancelled) return;
-      setState("error" in r ? { kind: "error", message: r.error } : { kind: "ready", card: r });
+      setState("error" in r ? { kind: "error", message: r.error } : { kind: "ready", card: r, block });
     });
     return () => {
       cancelled = true;
@@ -40,96 +36,128 @@ export function CardView() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 2500);
     } catch {
       setCopied(false);
     }
   }
 
+  const paused = state.kind === "ready" && state.card.status === "PAUSED";
+
   return (
-    <article>
-      <h1>Policy card</h1>
-      <p style={{ color: "var(--muted)" }}>
-        This card is a public self-declaration by the wallet owner. It is not a certification.
-      </p>
-      <p>
-        <code>{address}</code>
-      </p>
+    <Carton paused={paused}>
+      <div className="lede">
+        <h1>{paused ? "This agent is paused." : "An agent's public rules."}</h1>
+        <p>
+          Read straight from the card contract on BNB Smart Chain. The owner declared these rules; the guard on the agent's machine
+          enforces them.
+        </p>
+      </div>
 
-      {state.kind === "loading" && <p>Loading card...</p>}
-      {state.kind === "error" && <p style={{ color: "var(--danger)" }}>{state.message}</p>}
-      {state.kind === "ready" && <CardBody card={state.card} />}
+      <div className="carton-columns">
+        <article className="panel" aria-live="polite">
+          {paused && <div className="tamper">Paused · every guarded action is blocked</div>}
+          <PanelHeader status={state.kind === "ready" ? state.card.status : undefined}>
+            <span className="mono">{shortAddress(address)}</span>
+            {state.kind === "ready" && state.card.status !== "NONE" && <span>Version {state.card.version}</span>}
+          </PanelHeader>
 
-      <p>
-        <button type="button" onClick={copyShare}>
-          {copied ? "Copied" : "Copy share text"}
-        </button>
-      </p>
+          {state.kind === "loading" && <p>Reading the card from the chain…</p>}
+          {state.kind === "error" && (
+            <p className="alert">{state.message === "Not a 0x address" ? "That is not a full 0x address." : "Could not read the card from the chain. Try again in a moment."}</p>
+          )}
+          {state.kind === "ready" && <CardFacts card={state.card} block={state.block} />}
+        </article>
 
-      <section id="simulator">
-        {state.kind === "ready" && state.card.status !== "NONE" && (
-          <Simulator policyText={state.card.policyText} paused={state.card.status === "PAUSED"} />
-        )}
-      </section>
-      <section id="audit-verifier">
-        {state.kind === "ready" && state.card.status !== "NONE" && (
-          <AuditVerifier root={state.card.attestation?.logMerkleRoot ?? null} />
-        )}
-      </section>
-    </article>
+        <aside className="carton-side">
+          <section>
+            <h2>Share this card</h2>
+            <p>Post the link so others can check what this agent refuses.</p>
+            <button type="button" className="sticker" onClick={copyShare}>
+              <CopyIcon />
+              {copied ? "Copied" : "Copy share text"}
+            </button>
+          </section>
+          <section>
+            <h2>Publish your own</h2>
+            <p>Takes about a minute and one prompt to your agent.</p>
+            <p>
+              <Link to="/">Compose a card</Link>
+            </p>
+          </section>
+        </aside>
+      </div>
+    </Carton>
   );
 }
 
-function CardBody({ card }: { card: CardData }) {
-  const badge = BADGE[card.status];
-  const box = { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 8, padding: 12, marginBottom: 12 };
+function CardFacts({ card, block }: { card: CardData; block: bigint | null }) {
+  if (card.status === "NONE") {
+    return (
+      <Section head="No card yet">
+        <p>This address has not published a policy card.</p>
+        <p>
+          <Link to="/">Publish one</Link>
+        </p>
+      </Section>
+    );
+  }
+  const parsed = parsePolicy(card.policyText);
+  const ticket =
+    block !== null ? (
+      <a className="ticket" href={`https://bscscan.com/block/${block}`} target="_blank" rel="noreferrer">
+        read at block {block.toString()}
+      </a>
+    ) : undefined;
   return (
     <>
-      <p>
-        <strong style={{ color: badge.color, border: `1px solid ${badge.color}`, borderRadius: 6, padding: "2px 8px" }}>
-          {badge.label}
-        </strong>
-      </p>
-      {card.status === "NONE" ? (
-        <p>This address has not published a policy card.</p>
+      {parsed.ok ? (
+        <RulesAndLimits policy={parsed.policy} ticket={ticket} />
       ) : (
-        <>
-          <div style={box}>
-            <p>Version: {card.version}</p>
-            <p>Last updated: {fmtDate(card.updatedAt)}</p>
-          </div>
-          <div style={box}>
-            <h2>Rules</h2>
-            <ul>
-              {card.rules.map((r, i) => (
-                <li key={i}>{r}</li>
-              ))}
-            </ul>
-          </div>
-          <div style={box}>
-            <h2>Guardian</h2>
-            {card.guardian ? <code>{card.guardian}</code> : <p>No guardian</p>}
-          </div>
-          <div style={box}>
-            <h2>Latest attestation</h2>
-            {card.attestation ? (
-              <>
-                <p>Epoch: {card.attestation.epoch}</p>
-                <p>Allowed: {card.attestation.allowedCount}</p>
-                <p>Blocked: {card.attestation.totalBlocked}</p>
-                <p>
-                  Period: {fmtDate(card.attestation.periodStart)} to {fmtDate(card.attestation.periodEnd)}
-                </p>
-                <p>
-                  Merkle root: <code style={{ wordBreak: "break-all" }}>{card.attestation.logMerkleRoot}</code>
-                </p>
-              </>
-            ) : (
-              <p>No attestation yet</p>
-            )}
-          </div>
-        </>
+        <Section head="Rules">
+          <p className="alert">The published policy text cannot be read. The guard blocks everything until it is fixed.</p>
+        </Section>
       )}
+
+      <Section head="Record" note={`updated ${fmtDate(card.updatedAt)}`}>
+        {card.attestation ? (
+          <dl className="record">
+            <div>
+              <dt>Allowed to preview</dt>
+              <dd>{card.attestation.allowedCount}</dd>
+            </div>
+            <div>
+              <dt>Blocked</dt>
+              <dd>{card.attestation.totalBlocked}</dd>
+            </div>
+            <div className="wide">
+              <dt>
+                Attestation {card.attestation.epoch}, {fmtDate(card.attestation.periodStart)} to {fmtDate(card.attestation.periodEnd)}
+              </dt>
+              <dd>Merkle root {card.attestation.logMerkleRoot}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p>No attestation yet. The owner has not anchored an audit log.</p>
+        )}
+        <ul className="rows limits">
+          <li>
+            <span>Guardian</span>
+            <strong className="mono">{card.guardian ? shortAddress(card.guardian) : "None"}</strong>
+          </li>
+        </ul>
+      </Section>
+
+      <TryAnAttack policyText={card.policyText} paused={card.status === "PAUSED"} />
+      <Warnings />
+      <AuditVerifier root={card.attestation?.logMerkleRoot ?? null} />
+
+      <p className="panel-foot">
+        Source:{" "}
+        <a className="ticket" href={`https://bscscan.com/address/${CARD_CONTRACT}#readContract`} target="_blank" rel="noreferrer">
+          card contract {shortAddress(CARD_CONTRACT)}
+        </a>
+      </p>
     </>
   );
 }

@@ -1,12 +1,14 @@
 import { CARD_CONTRACT, CARD_ABI } from "@apc/policy-core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { WagmiProvider, useAccount, useConnect, useDisconnect, useWriteContract } from "wagmi";
 import { publicClient } from "../lib/chain";
 import { buildPauseCalldata, guardianState, type GuardianState } from "../lib/guardian";
 import { readCard, type CardData } from "../lib/readCard";
 import { wagmiConfig } from "../lib/wagmi";
+import { Carton } from "../world/Carton";
+import { PanelHeader, Section } from "../world/Facts";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
@@ -94,76 +96,90 @@ function GuardianInner() {
     });
   }
 
-  const box = { background: "var(--card)", border: "1px solid var(--line)", borderRadius: 8, padding: 12, marginBottom: 12 };
-
   return (
-    <article>
-      <h1>Guardian</h1>
-      <p style={{ color: "var(--danger)" }}>
-        Use your own ordinary wallet here. Never connect the agent's wallet to any website.
-      </p>
-
-      <div style={box}>
-        <label>
-          Agent address
-          <br />
-          <input
-            style={{ width: "100%" }}
-            value={agent}
-            onChange={(e) => setAgent(e.target.value)}
-            placeholder="0x1111111111111111111111111111111111111111"
-          />
-        </label>
+    <Carton paused={state.kind === "already-paused" || Boolean(txHash)}>
+      <div className="lede">
+        <h1>Pause an agent.</h1>
+        <p>For the guardian named on a card. Connect your own ordinary wallet, never the agent's, and stop the agent's next guarded action.</p>
       </div>
 
-      <div style={box}>
-        {address ? (
-          <p>
-            Connected: <code>{address}</code>{" "}
-            <button type="button" onClick={() => disconnect()}>
-              Disconnect
+      <div className="carton-columns">
+        <article className="panel">
+          {txHash && <div className="tamper">Paused · every guarded action is blocked</div>}
+          <PanelHeader title="Guardian Controls" />
+
+          <Section head="Agent">
+            <label className="field">
+              Agent wallet address
+              <input value={agent} onChange={(e) => setAgent(e.target.value)} placeholder="0x..." spellCheck={false} autoComplete="off" />
+            </label>
+            {!deployed && <p className="alert">The card contract is not deployed yet.</p>}
+            {readError && <p className="alert">{readError === "Not a 0x address" ? "That is not a full 0x address." : "Could not read the card from the chain."}</p>}
+            {deployed && !readError && <p>{message(state)}</p>}
+          </Section>
+
+          <Section head="Your wallet">
+            {address ? (
+              <ul className="rows limits">
+                <li>
+                  <span>Connected</span>
+                  <strong className="mono">{address.slice(0, 6)}…{address.slice(-4)}</strong>
+                </li>
+                <li>
+                  <span>Wrong wallet?</span>
+                  <button type="button" className="attack-try" onClick={() => disconnect()}>
+                    Disconnect
+                  </button>
+                </li>
+              </ul>
+            ) : (
+              <button
+                type="button"
+                className="attack-try"
+                disabled={connecting || connectors.length === 0}
+                onClick={() => connectors[0] && connect({ connector: connectors[0] })}
+              >
+                {connectors.length === 0 ? "No browser wallet found" : connecting ? "Connecting…" : "Connect guardian wallet"}
+              </button>
+            )}
+            {connectError && <p className="alert">Could not connect the wallet. Open this page in a browser with your wallet extension.</p>}
+          </Section>
+
+          <Section head="Pause">
+            <button type="button" className="sticker sticker--danger" disabled={!canPause} onClick={pause}>
+              {isPending ? "Confirm in your wallet…" : "Emergency pause"}
             </button>
-          </p>
-        ) : (
-          <button
-            type="button"
-            disabled={connecting || connectors.length === 0}
-            onClick={() => connectors[0] && connect({ connector: connectors[0] })}
-          >
-            Connect guardian wallet
-          </button>
-        )}
-        {connectError && <p style={{ color: "var(--danger)" }}>Could not connect the wallet.</p>}
+            {writeError && <p className="alert">The pause transaction was not sent.</p>}
+            {txHash && (
+              <p className="done" role="status">
+                Paused.{" "}
+                <a className="ticket" href={`https://bscscan.com/tx/${txHash}`} target="_blank" rel="noreferrer">
+                  tx {txHash.slice(0, 10)}…
+                </a>{" "}
+                The agent's guard blocks its next actions.
+              </p>
+            )}
+          </Section>
+
+          <Section head="Warnings">
+            <ul className="rows warnings">
+              <li>Pausing only stops agents that run the Agent Policy Card guard.</li>
+              <li>The hard stop is in the wallet app: turn off Developer Mode, lower the daily limit or end the session.</li>
+              <li>You cannot unpause. Only the owner can, after deciding it is safe.</li>
+            </ul>
+          </Section>
+        </article>
+
+        <aside className="carton-side">
+          <section>
+            <h2>Not a guardian yet?</h2>
+            <p>The owner adds you when they publish or update their card. Your wallet needs a little BNB for gas.</p>
+            <p>
+              <Link to="/">Compose a card</Link>
+            </p>
+          </section>
+        </aside>
       </div>
-
-      {!deployed && <p style={{ color: "var(--danger)" }}>The card contract is not deployed yet.</p>}
-      {readError && <p style={{ color: "var(--danger)" }}>{readError}</p>}
-      {deployed && !readError && <p>{message(state)}</p>}
-
-      <p>
-        <button
-          type="button"
-          disabled={!canPause}
-          onClick={pause}
-          style={{ background: "var(--danger)", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px" }}
-        >
-          {isPending ? "Confirm in your wallet..." : "Emergency pause"}
-        </button>
-      </p>
-      {writeError && <p style={{ color: "var(--danger)" }}>The pause transaction was not sent.</p>}
-      {txHash && (
-        <div style={box}>
-          <p>
-            Transaction: <code style={{ wordBreak: "break-all" }}>{txHash}</code>
-          </p>
-          <p>Paused. The agent's guard will block its next actions.</p>
-        </div>
-      )}
-
-      <p style={{ color: "var(--muted)" }}>
-        Pausing only stops agents that run the Agent Policy Card guard. The hard stop is in the wallet app: turn off
-        Developer Mode, lower the daily limit or end the session.
-      </p>
-    </article>
+    </Carton>
   );
 }

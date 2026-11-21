@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
+import { Section } from "../world/Facts";
 import { verifyAuditLine } from "./verify";
-
-const BOX = {
-  background: "var(--card)",
-  border: "1px solid var(--line)",
-  borderRadius: 8,
-  padding: 12,
-  marginBottom: 12,
-};
 
 export function AuditVerifier({ root }: { root: string | null }) {
   const [input, setInput] = useState("");
@@ -25,36 +18,28 @@ export function AuditVerifier({ root }: { root: string | null }) {
   }
 
   return (
-    <div style={BOX}>
-      <h2>Audit verifier</h2>
-      {disabled && <p style={{ color: "var(--muted)" }}>No attestation yet</p>}
-      <p>
-        <label>
-          Audit proof JSON
-          <br />
-          <textarea
-            rows={4}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              setResult(null);
-            }}
-            disabled={disabled}
-            placeholder='Paste JSON from "apc-attest proof"'
-            style={{ width: "100%", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
-          />
-        </label>
-      </p>
-      <p>
-        <button type="button" onClick={onVerify} disabled={disabled}>
-          Verify
-        </button>
-      </p>
+    <Section head="Check a log line" note={disabled ? "needs an attestation" : "against the on-chain Merkle root"}>
+      <label className="field">
+        Proof from the owner (output of apc-attest proof)
+        <textarea
+          rows={3}
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            setResult(null);
+          }}
+          disabled={disabled}
+          placeholder='{"line": "...", "proof": ["0x..."], "root": "0x..."}'
+        />
+      </label>
+      <button type="button" className="attack-try" onClick={onVerify} disabled={disabled || input.trim() === ""}>
+        Verify line
+      </button>
       {result !== null && (
-        <p role={result.ok ? "status" : "alert"} style={{ color: result.ok ? "var(--accent)" : "var(--danger)" }}>
-          {result.ok ? "Verified against the on-chain root" : result.error}
+        <p role={result.ok ? "status" : "alert"} className={result.ok ? "done" : "alert"}>
+          {result.ok ? "This line is part of the attested log." : result.error}
         </p>
       )}
-    </div>
+    </Section>
   );
 }
