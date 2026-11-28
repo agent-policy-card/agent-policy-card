@@ -2,10 +2,10 @@
 import { createPublicClient, fallback, http } from "viem";
 import { bsc } from "viem/chains";
 
-// publicnode first: it serves browser origins and eth_getLogs up to 50,000 blocks; bsc-dataseed refuses getLogs.
+// publicnode first: it serves browser origins and eth_getLogs (10,000 blocks per call, about a day
+// of history); bsc-dataseed refuses getLogs. Older events come from the scheduled wall index.
 export const RPC_URLS = ["https://bsc-rpc.publicnode.com", "https://bsc-dataseed.bnbchain.org"];
 export const LOGS_RPC_URL = "https://bsc-rpc.publicnode.com";
-export const LOGS_MAX_RANGE = 50_000n;
 
 export const publicClient = createPublicClient({
   chain: bsc,

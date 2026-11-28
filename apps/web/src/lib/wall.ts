@@ -1,6 +1,6 @@
 // The public wall of published cards: read every CardPublished event, then each owner's card.
 // Addresses come only from chain data at runtime; no name lookups.
-import { CARD_ABI, CARD_CONTRACT, DEPLOY_BLOCK, parsePolicy } from "@apc/policy-core";
+import { CARD_ABI, CARD_CONTRACT, mergeIndex, parsePolicy, parseWallIndex, scanEvents, type ScanClient, type WallIndex } from "@apc/policy-core";
 import { toFacts } from "./facts";
 import type { PublicClient } from "viem";
 
@@ -44,65 +44,36 @@ export function buildWall(logs: PublishLog[], snapshots: Record<string, CardSnap
   return { entries, totals };
 }
 
-const PUBLISHED = CARD_ABI.find((x) => x.type === "event" && x.name === "CardPublished");
+/** Publish events from the index, as the wall orders them. */
+export function publishLogs(index: WallIndex): PublishLog[] {
+  return index.events
+    .filter((e) => e.event === "CardPublished")
+    .map((e) => ({ owner: e.owner, block: BigInt(e.block), logIndex: e.logIndex, version: 0 }));
+}
 
-async function getPublishLogs(client: PublicClient, toBlock: bigint, range: bigint, start: bigint): Promise<PublishLog[]> {
-  if (!PUBLISHED || PUBLISHED.type !== "event") return [];
-  const windows: [bigint, bigint][] = [];
-  for (let from = start; from <= toBlock; from += range) {
-    windows.push([from, from + range - 1n < toBlock ? from + range - 1n : toBlock]);
-  }
-  const out: PublishLog[] = [];
-  const CONCURRENCY = 10;
-  for (let i = 0; i < windows.length; i += CONCURRENCY) {
-    const batch = await Promise.all(
-      windows.slice(i, i + CONCURRENCY).map(([fromBlock, to]) =>
-        client.getLogs({ address: CARD_CONTRACT as `0x${string}`, event: PUBLISHED, fromBlock, toBlock: to }),
-      ),
-    );
-    for (const logs of batch) {
-      for (const l of logs) {
-        const args = l.args as { owner?: string; version?: number };
-        if (typeof args.owner === "string") {
-          out.push({ owner: args.owner, block: l.blockNumber ?? 0n, logIndex: l.logIndex ?? 0, version: Number(args.version ?? 0) });
-        }
-      }
+// The site scans the recent tail itself only while it is short; beyond this the scheduled index
+// is trusted as is (it runs every few minutes, so this only happens if that job has stalled).
+export const LIVE_TAIL_MAX = 60_000n;
+
+async function loadIndex(url: string): Promise<WallIndex> {
+  const res = await fetch(url, { cache: "no-store" });
+  const idx = res.ok ? parseWallIndex(await res.json()) : null;
+  if (!idx) throw new Error("wall index unavailable");
+  return idx;
+}
+
+export async function fetchWall(client: PublicClient, logsClient: PublicClient, indexUrl = "./wall-index.json"): Promise<Wall> {
+  let index = await loadIndex(indexUrl);
+  try {
+    const head = await logsClient.getBlockNumber();
+    const from = BigInt(index.head) + 1n;
+    if (head >= from && head - from <= LIVE_TAIL_MAX) {
+      index = mergeIndex(index, await scanEvents(logsClient as unknown as ScanClient, from, head), head);
     }
-  }
-  return out;
-}
-
-const CACHE_KEY = `apc-wall-logs:${CARD_CONTRACT.toLowerCase()}`;
-type CachedLogs = { head: string; logs: { owner: string; block: string; logIndex: number; version: number }[] };
-
-// Per-viewer convenience only: remembers scanned events so the next visit scans new blocks only.
-function loadCache(): { head: bigint; logs: PublishLog[] } | null {
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const c = JSON.parse(raw) as CachedLogs;
-    return { head: BigInt(c.head), logs: c.logs.map((l) => ({ ...l, block: BigInt(l.block) })) };
   } catch {
-    return null;
+    // the tail is a freshness bonus; the scheduled index alone still fills the shelf
   }
-}
-
-function saveCache(head: bigint, logs: PublishLog[]): void {
-  try {
-    const c: CachedLogs = { head: head.toString(), logs: logs.map((l) => ({ ...l, block: l.block.toString() })) };
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(c));
-  } catch {
-    // storage unavailable: the wall still works, it just rescans next time
-  }
-}
-
-export async function fetchWall(client: PublicClient, logsClient: PublicClient, range: bigint): Promise<Wall> {
-  const head = await logsClient.getBlockNumber();
-  const cached = typeof window === "undefined" ? null : loadCache();
-  const start = cached && cached.head < head ? cached.head + 1n : DEPLOY_BLOCK;
-  const fresh = cached && cached.head >= head ? [] : await getPublishLogs(logsClient, head, range, start);
-  const logs = [...(cached?.logs ?? []), ...fresh];
-  if (typeof window !== "undefined") saveCache(head, logs);
+  const logs = publishLogs(index);
   const owners = [...new Set(logs.map((l) => l.owner.toLowerCase()))] as `0x${string}`[];
   const snapshots: Record<string, CardSnapshot> = {};
   await Promise.all(

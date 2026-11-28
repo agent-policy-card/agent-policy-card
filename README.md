@@ -86,9 +86,12 @@ This project reuses the architecture of Leash, from the Binance Agent OS hackath
 npm ci
 npm run typecheck && npm test && npm run hygiene
 cd contracts && forge test --no-match-path "*fork*"
+npm run index-wall   # writes apps/web/public/wall-index.json for the shelf
 npm run dev -w @apc/web
 npm run count-holders
 ```
+
+The shelf reads `wall-index.json`, an index of the contract's events. Free public BSC RPCs keep only about a day of logs and cap `eth_getLogs` at 10,000 blocks, so the Pages workflow runs every 10 minutes: it takes the index the live site serves, scans the new blocks and redeploys. The site itself scans only the short tail after the index. If the index ever falls behind the RPC's log history, the job fails instead of dropping events; rebuild it by running the workflow by hand with `seed_head` (a block at or before the moment you read the list) and `seed_txs` (every transaction hash to the contract, from the explorer). The seed is built from receipts and never committed.
 
 `npm run hygiene` fails when a tracked file contains a wallet address that is not listed in `hygiene.allow.json`, or a string listed in your untracked `.hygiene-local`.
 

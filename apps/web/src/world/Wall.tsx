@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { LOGS_MAX_RANGE, logsClient, publicClient } from "../lib/chain";
+import { logsClient, publicClient } from "../lib/chain";
 import { shortAddress } from "../lib/facts";
 import { FOUNDING_LIMIT, fetchWall, type Wall as WallData } from "../lib/wall";
 
@@ -11,7 +11,7 @@ export function Wall() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchWall(publicClient, logsClient, LOGS_MAX_RANGE)
+    fetchWall(publicClient, logsClient)
       .then((wall) => !cancelled && setState({ kind: "ready", wall }))
       .catch(() => !cancelled && setState({ kind: "error" }));
     return () => {

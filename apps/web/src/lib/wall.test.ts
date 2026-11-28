@@ -42,3 +42,24 @@ describe("buildWall", () => {
     expect(wall.totals.blocked).toBe(2);
   });
 });
+
+describe("publishLogs", () => {
+  it("keeps only publish events from the index, in index order", async () => {
+    const { emptyIndex, mergeIndex } = await import("@apc/policy-core");
+    const { publishLogs } = await import("./wall");
+    const t = (n: number) => `0x${n.toString(16).padStart(64, "0")}`;
+    const idx = mergeIndex(
+      emptyIndex(0n),
+      [
+        { event: "AttestationSubmitted", owner: A, block: "9", logIndex: 0, tx: t(3) },
+        { event: "CardPublished", owner: B, block: "5", logIndex: 1, tx: t(2) },
+        { event: "CardPublished", owner: A, block: "5", logIndex: 0, tx: t(1) },
+      ],
+      10n,
+    );
+    expect(publishLogs(idx).map((l) => [l.owner, l.block])).toEqual([
+      [A, 5n],
+      [B, 5n],
+    ]);
+  });
+});

@@ -8,3 +8,4 @@ export * from "./intent.js";
 export * from "./evaluate.js";
 export * from "./deployment.js";
 export * from "./samples.js";
+export * from "./wallIndex.js";

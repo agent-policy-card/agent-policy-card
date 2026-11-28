@@ -1,55 +1,58 @@
 import { describe, expect, it } from "vitest";
-import { countHolders, type HolderClient } from "./count-holders.js";
+import { emptyIndex, mergeIndex } from "@apc/policy-core";
+import { countHolders, type BalanceClient } from "./count-holders.js";
+import { buildSeed, pickBase, type ReceiptClient } from "./index-wall.js";
 
 const A = "0x3333333333333333333333333333333333333333";
 const B = "0x4444444444444444444444444444444444444444";
 const G = "0x1111111111111111111111111111111111111111";
+const tx = (n: number) => `0x${n.toString(16).padStart(64, "0")}`;
 
-function client(logsByChunk: Record<string, unknown[]>, holders: string[], failures: Record<string, number> = {}): HolderClient & { calls: string[] } {
-  const calls: string[] = [];
+function balances(holders: string[], failures = 0): BalanceClient {
+  let left = failures;
   return {
-    calls,
-    getLogs: async ({ fromBlock, toBlock }) => {
-      const key = `${fromBlock}-${toBlock}`;
-      calls.push(key);
-      if ((failures[key] ?? 0) > 0) {
-        failures[key]!--;
-        throw new Error("rpc");
-      }
-      return (logsByChunk[key] ?? []) as never;
+    readContract: async ({ args }) => {
+      if (left-- > 0) throw new Error("rpc");
+      return holders.includes(String(args[0]).toLowerCase()) ? 1n : 0n;
     },
-    readContract: async ({ args }) => (holders.includes(String(args[0]).toLowerCase()) ? 1n : 0n) as never,
   };
 }
 
-const opts = { cardContract: "0x2222222222222222222222222222222222222222", agentId: "0x60b9262456de011f7d15a54cdd8c48baaa8b022f", fromBlock: 0n, toBlock: 9n, chunk: 5n };
+const index = mergeIndex(
+  emptyIndex(0n),
+  [
+    { event: "CardPublished", owner: A, block: "1", logIndex: 0, tx: tx(1) },
+    { event: "AgentPaused", owner: A, triggeredBy: G, block: "2", logIndex: 0, tx: tx(2) },
+    { event: "AttestationSubmitted", owner: A, block: "3", logIndex: 0, tx: tx(3) },
+    { event: "CardPublished", owner: B, block: "4", logIndex: 0, tx: tx(4) },
+  ],
+  10n,
+);
 
 describe("countHolders", () => {
-  it("collects owners and triggeredBy once each and filters Agent ID holders", async () => {
-    const c = client(
-      {
-        "0-4": [
-          { eventName: "CardPublished", args: { owner: A } },
-          { eventName: "AgentPaused", args: { owner: A, triggeredBy: G } },
-        ],
-        "5-9": [
-          { eventName: "AttestationSubmitted", args: { owner: A.toLowerCase() } },
-          { eventName: "CardPublished", args: { owner: B } },
-        ],
-      },
-      [A.toLowerCase()],
-    );
-    expect(await countHolders(c, opts)).toEqual({ total: 3, holders: 1 });
-    expect(c.calls).toEqual(["0-4", "5-9"]);
+  it("counts owners and pause triggers once each and filters Agent ID holders", async () => {
+    expect(await countHolders(index, balances([A]))).toEqual({ total: 3, holders: 1 });
   });
 
-  it("retries a failing chunk up to 3 times", async () => {
-    const c = client({ "0-4": [{ eventName: "CardPublished", args: { owner: A } }] }, [A.toLowerCase()], { "0-4": 2 });
-    expect(await countHolders(c, opts)).toEqual({ total: 1, holders: 1 });
+  it("retries a failing balance read, then gives up after 3 failures", async () => {
+    expect(await countHolders(index, balances([A], 2))).toEqual({ total: 3, holders: 1 });
+    await expect(countHolders(index, balances([A], 3))).rejects.toThrow();
+  });
+});
+
+describe("index-wall helpers", () => {
+  it("pickBase takes the newest index and refuses when there is none", () => {
+    const older = emptyIndex(5n);
+    expect(pickBase(older, index, null)).toBe(index);
+    expect(() => pickBase(null, null)).toThrow(/bootstrap/);
   });
 
-  it("throws after 3 failures", async () => {
-    const c = client({}, [], { "5-9": 3 });
-    await expect(countHolders(c, opts)).rejects.toThrow();
+  it("buildSeed keeps only card contract logs and rejects receipts after the head", async () => {
+    const receipt = (block: bigint): ReceiptClient => ({
+      getTransactionReceipt: async () => ({ blockNumber: block, logs: [{ address: "0x2222222222222222222222222222222222222222" }] }),
+    });
+    expect((await buildSeed(receipt(5n), 10n, [tx(1)])).events).toEqual([]);
+    await expect(buildSeed(receipt(11n), 10n, [tx(1)])).rejects.toThrow(/after the seed head/);
+    await expect(buildSeed(receipt(5n), 10n, ["nope"])).rejects.toThrow(/valid transaction hash/);
   });
 });
