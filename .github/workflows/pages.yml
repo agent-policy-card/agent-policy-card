@@ -2,9 +2,10 @@ name: pages
 on:
   push:
     branches: [main]
-  # The wall index has to be carried forward well within the RPC's ~1 day of log history.
+  # The wall index has to be carried forward well within the RPC's log history (see README).
+  # Off the top of the hour, where GitHub drops the most scheduled runs.
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "7-59/10 * * * *"
   workflow_dispatch:
     inputs:
       seed_head:
@@ -23,6 +24,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,18 +32,23 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
-        if: github.event_name != 'schedule'
+      - if: github.event_name != 'schedule'
+        run: npm run typecheck && npm test && npm run hygiene
+      # Second copy of the index, so a run does not depend only on the Pages CDN.
+      - uses: actions/cache/restore@v4
+        with:
+          path: .wall-cache
+          key: wall-index-${{ github.run_id }}
+          restore-keys: wall-index-
       - name: Index card events
         env:
           SEED_HEAD: ${{ inputs.seed_head }}
           SEED_TXS: ${{ inputs.seed_txs }}
-        run: |
-          if [ -n "$SEED_HEAD" ]; then
-            npm run index-wall -- --seed-head "$SEED_HEAD" --seed-txs "$SEED_TXS"
-          else
-            npm run index-wall
-          fi
+        run: npx tsx scripts/index-wall.ts --cache .wall-cache/wall-index.json
+      - uses: actions/cache/save@v4
+        with:
+          path: .wall-cache
+          key: wall-index-${{ github.run_id }}
       - run: npm run build -w @apc/web
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -49,6 +56,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

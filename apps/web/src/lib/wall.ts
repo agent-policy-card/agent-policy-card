@@ -1,6 +1,6 @@
 // The public wall of published cards: read every CardPublished event, then each owner's card.
 // Addresses come only from chain data at runtime; no name lookups.
-import { CARD_ABI, CARD_CONTRACT, mergeIndex, parsePolicy, parseWallIndex, scanEvents, type ScanClient, type WallIndex } from "@apc/policy-core";
+import { CARD_ABI, CARD_CONTRACT, CONFIRMATIONS, extendIndex, parsePolicy, parseWallIndex, type ScanClient, type WallIndex } from "@apc/policy-core";
 import { toFacts } from "./facts";
 import type { PublicClient } from "viem";
 
@@ -51,27 +51,32 @@ export function publishLogs(index: WallIndex): PublishLog[] {
     .map((e) => ({ owner: e.owner, block: BigInt(e.block), logIndex: e.logIndex, version: 0 }));
 }
 
-// The site scans the recent tail itself only while it is short; beyond this the scheduled index
-// is trusted as is (it runs every few minutes, so this only happens if that job has stalled).
-export const LIVE_TAIL_MAX = 60_000n;
+export type LiveWall = Wall & { indexedHead: bigint; fresh: boolean };
+type IndexFetcher = (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
-async function loadIndex(url: string): Promise<WallIndex> {
-  const res = await fetch(url, { cache: "no-store" });
+async function loadIndex(url: string, fetcher: IndexFetcher): Promise<WallIndex> {
+  const res = await fetcher(url);
   const idx = res.ok ? parseWallIndex(await res.json()) : null;
   if (!idx) throw new Error("wall index unavailable");
   return idx;
 }
 
-export async function fetchWall(client: PublicClient, logsClient: PublicClient, indexUrl = "./wall-index.json"): Promise<Wall> {
-  let index = await loadIndex(indexUrl);
+// The tail counts as fresh when it reaches this close to the chain head.
+const FRESH_SLACK = CONFIRMATIONS + 200n;
+
+export async function fetchWall(
+  client: PublicClient,
+  logsClient: PublicClient,
+  opts: { indexUrl?: string; fetcher?: IndexFetcher; retryDelayMs?: number } = {},
+): Promise<LiveWall> {
+  let index = await loadIndex(opts.indexUrl ?? "./wall-index.json", opts.fetcher ?? ((u) => fetch(u, { cache: "no-store" })));
+  let fresh = false;
   try {
-    const head = await logsClient.getBlockNumber();
-    const from = BigInt(index.head) + 1n;
-    if (head >= from && head - from <= LIVE_TAIL_MAX) {
-      index = mergeIndex(index, await scanEvents(logsClient as unknown as ScanClient, from, head), head);
-    }
+    const chainHead = await logsClient.getBlockNumber();
+    index = await extendIndex(index, logsClient as unknown as ScanClient, chainHead, { retry: { attempts: 2, delayMs: opts.retryDelayMs ?? 400 } });
+    fresh = chainHead - BigInt(index.head) <= FRESH_SLACK;
   } catch {
-    // the tail is a freshness bonus; the scheduled index alone still fills the shelf
+    // the scheduled index alone still fills the shelf; the visitor is told it may be behind
   }
   const logs = publishLogs(index);
   const owners = [...new Set(logs.map((l) => l.owner.toLowerCase()))] as `0x${string}`[];
@@ -98,5 +103,7 @@ export async function fetchWall(client: PublicClient, logsClient: PublicClient, 
       }
     }),
   );
-  return buildWall(logs, snapshots);
+  // An owner whose card reads back as never published cannot be on the shelf.
+  const real = logs.filter((l) => snapshots[l.owner.toLowerCase()]?.version !== 0);
+  return { ...buildWall(real, snapshots), indexedHead: BigInt(index.head), fresh };
 }

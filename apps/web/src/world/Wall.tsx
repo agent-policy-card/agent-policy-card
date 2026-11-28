@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { logsClient, publicClient } from "../lib/chain";
 import { shortAddress } from "../lib/facts";
-import { FOUNDING_LIMIT, fetchWall, type Wall as WallData } from "../lib/wall";
+import { FOUNDING_LIMIT, fetchWall, type LiveWall } from "../lib/wall";
 
-type State = { kind: "loading" } | { kind: "error" } | { kind: "ready"; wall: WallData };
+type State = { kind: "loading" } | { kind: "error" } | { kind: "ready"; wall: LiveWall };
 
 export function Wall() {
   const [state, setState] = useState<State>({ kind: "loading" });
@@ -46,6 +46,9 @@ export function Wall() {
 
       {state.kind === "error" && <p className="carton-error">Could not read the shelf from the chain right now.</p>}
       {state.kind === "loading" && <p className="wall-note">Reading cards from the chain…</p>}
+      {state.kind === "ready" && !state.wall.fresh && (
+        <p className="wall-note">Cards published in the last few hours may not be on the shelf yet.</p>
+      )}
       {state.kind === "ready" && (
         <ol className="shelf">
           {state.wall.entries.map((e) => (

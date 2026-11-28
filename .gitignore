@@ -17,3 +17,4 @@ apps/web/.impeccable/direction-round.json
 apps/web/.impeccable/brief-body.md
 apps/web/.vite/
 apps/web/public/wall-index.json
+.wall-cache/
